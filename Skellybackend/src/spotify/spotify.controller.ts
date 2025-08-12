@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Query, Req, Res, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Req, Res, Headers, Put, Param } from '@nestjs/common';
 import { SpotifyService } from './spotify.service';
 import { PlayDto } from './dto/play.dto';
 import { Request, Response } from 'express';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { AxiosError } from 'axios';
+import { SeekDto } from './dto/seek.dto';
 
 @Controller('spotify')
 export class SpotifyController {
@@ -137,41 +137,62 @@ async callback(@Query('code') code: string, @Res() res: Response) {
     }
   }
   
-  @Post('play')
-  async play(
-    @Body() playDto: PlayDto, 
-    @Req() req: Request,
-    @Headers('authorization') authHeader: string
-  ) {
-    try {
-      const token = authHeader?.replace('Bearer ', '') || req.cookies.access_token;
-      if (!token) {
-        throw new BadRequestException('Access token required');
-      }
-
-      if (!playDto.uri || !playDto.device_id) {
-        throw new BadRequestException('Missing required parameters');
-      }
-
-      this.spotifyService.setAccessToken(token);
-      await this.spotifyService.playTrack(playDto.uri, playDto.device_id);
-      
-      return { 
-        success: true,
-        message: 'Reproduciendo canción' 
-      };
-    } catch (error) {
-      console.error('Play error:', error);
-      
-      if (error instanceof AxiosError && error.response) {
-        throw new InternalServerErrorException(
-          error.response.data?.error?.message || 'Spotify API error'
-        );
-      }
-      
-      throw new InternalServerErrorException('Failed to play track');
+@Post('play')
+async play(
+  @Body() playDto: PlayDto, // Puede estar vacío o tener solo device_id para reanudar
+  @Req() req: Request,
+  @Headers('authorization') authHeader: string
+) {
+  try {
+    const token = authHeader?.replace('Bearer ', '') || req.cookies.access_token;
+    if (!token) {
+      throw new BadRequestException('Access token required');
     }
+
+    this.spotifyService.setAccessToken(token);
+
+    // Validación: Se requiere device_id
+    if (!playDto.device_id) {
+       throw new BadRequestException('Missing required parameter: device_id');
+    }
+
+    // Validación modificada:
+    // Si NO se proporcionan ni 'uris' ni 'context_uri', es una solicitud de reanudar.
+    // Si se proporcionan, se reproduce lo indicado.
+    if (!playDto.uris && !playDto.context_uri) {
+      // Caso de reanudar: solo se pasa el device_id
+      // El servicio debe manejar esto correctamente
+      console.log('Resuming playback on device:', playDto.device_id);
+    } else {
+      // Caso de reproducir algo nuevo: se requiere uris o context_uri
+      if (!playDto.uris && !playDto.context_uri) {
+           throw new BadRequestException('Either "uris" array or "context_uri" string must be provided to start new playback.');
+      }
+      // La lógica de validación principal para uris/context_uri ahora está en el servicio
+      // Pero puedes agregar validaciones adicionales aquí si es necesario
+    }
+
+    // Pasar el DTO completo al servicio, incluso si está "vacío" (solo con device_id)
+    await this.spotifyService.playTrack(playDto, playDto.device_id);
+    return {
+      success: true,
+      message: playDto.uris || playDto.context_uri ? 'Reproduciendo' : 'Reanudando'
+    };
+  } catch (error) {
+    console.error('Play endpoint error:', error);
+    if (error instanceof BadRequestException) {
+       // Relanzar errores de validación del controlador
+       throw error;
+    }
+    if (error instanceof Error) {
+      // Manejar errores del servicio
+      throw new InternalServerErrorException(
+        error.message || 'Failed to play/resume track'
+      );
+    }
+    throw new InternalServerErrorException('Failed to play/resume track');
   }
+}
 
   @Post('pause')
   async pause(@Req() req: Request) {
@@ -207,6 +228,96 @@ async callback(@Query('code') code: string, @Res() res: Response) {
     } catch (error) {
       console.error('Current track error:', error);
       throw new InternalServerErrorException('Failed to get current track');
+    }
+  }
+
+  @Post('next-track')
+  async nextTrack(@Body() body: { device_id: string }, @Req() req: Request) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) throw new Error('Access token required');
+    if (!body.device_id) throw new Error('Missing device_id');
+
+    this.spotifyService.setAccessToken(token);
+    await this.spotifyService.nextTrack(body.device_id);
+    return { success: true, message: 'Next track played' };
+  }
+
+  @Post('previous-track')
+  async previousTrack(@Body() body: { device_id: string }, @Req() req: Request) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) throw new Error('Access token required');
+    if (!body.device_id) throw new Error('Missing device_id');
+
+    this.spotifyService.setAccessToken(token);
+    await this.spotifyService.previousTrack(body.device_id);
+    return { success: true, message: 'Previous track played' };
+  }
+
+@Put('seek')
+async seek(
+  // Usar @Body() para obtener los datos del cuerpo de la solicitud
+  @Body() seekDto: SeekDto, 
+  @Req() req: Request,
+  @Headers('authorization') authHeader: string
+) {
+  try {
+    const token = authHeader?.replace('Bearer ', '') || req.cookies.access_token;
+    if (!token) {
+      throw new BadRequestException('Access token required');
+    }
+    this.spotifyService.setAccessToken(token);
+
+    // Validar datos del cuerpo
+    if (seekDto.position_ms === undefined || seekDto.device_id === undefined) {
+      throw new BadRequestException('position_ms and device_id are required in the request body');
+    }
+
+    const { position_ms, device_id } = seekDto;
+
+    await this.spotifyService.seekTrack(position_ms, device_id);
+    return { message: 'Playback position updated' };
+  } catch (error) {
+    console.error('Seek endpoint error:', error);
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+    if (error instanceof Error) {
+      throw new InternalServerErrorException(`Seek failed: ${error.message}`);
+    }
+    throw new InternalServerErrorException('Seek failed');
+  }
+}
+
+  @Get('search')
+  async search(
+    @Query('q') query: string,
+    @Query('limit') limit: number = 900,
+    @Req() req: Request,
+    @Headers('authorization') authHeader: string
+  ) {
+    try {
+      const token = authHeader?.replace('Bearer ', '') || req.cookies.access_token;
+      if (!token) {
+        throw new BadRequestException('Access token required');
+      }
+
+      // Establecer el token en el servicio
+      this.spotifyService.setAccessToken(token);
+
+      if (!query || query.trim().length === 0) {
+        throw new BadRequestException('Search query is required');
+      }
+
+      return this.spotifyService.searchAll(query, limit);
+    } catch (error) {
+      console.error('Search endpoint error:', error);
+      if (error instanceof BadRequestException) {
+        throw error; // Relanzar errores de validación
+      }
+      if (error instanceof Error) {
+        throw new InternalServerErrorException(`Search failed: ${error.message}`);
+      }
+      throw new InternalServerErrorException('Search failed');
     }
   }
 }

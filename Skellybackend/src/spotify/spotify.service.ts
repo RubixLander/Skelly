@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { URLSearchParams } from 'url';
+import { PlayDto } from './dto/play.dto';
 
 @Injectable()
 export class SpotifyService {
   private accessToken: string = '';
   private refreshToken: string = '';
+  spotifyService: any;
 
   constructor(private readonly httpService: HttpService) {}
 
@@ -88,24 +90,54 @@ export class SpotifyService {
     };
   }
 
-  async playTrack(uri: string, deviceId: string) {
-    try {
-      const response = await firstValueFrom(
+async playTrack(playDto: PlayDto, deviceId: string): Promise<void> {
+  try {
+    // Si no hay uris ni context_uri, es una solicitud de reanudar
+    if (!playDto.uris && !playDto.context_uri) {
+      // Para reanudar, llamamos sin cuerpo
+      // La API de Spotify reanuda la reproducción pausada en el dispositivo especificado
+      await firstValueFrom(
         this.httpService.put(
           `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
-          { uris: [uri] },
+          {}, // Cuerpo vacío para reanudar
           { headers: this.getAuthHeader() }
         )
       );
-      return response.data;
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('Error en Spotify API:', error.message);
-        throw new Error(`Error al reproducir pista: ${error.message}`);
-      }
-      throw new Error('Error desconocido al reproducir pista');
+      console.log(`Playback resumed on device ${deviceId}`);
+      return; // Salir temprano
     }
+
+    // Si hay uris o context_uri, proceder con la lógica original
+    const body: any = {
+      ...(playDto.uris && { uris: playDto.uris }),
+      ...(playDto.context_uri && { context_uri: playDto.context_uri }),
+      ...(playDto.offset && { offset: playDto.offset }),
+      ...(playDto.position_ms !== undefined && { position_ms: playDto.position_ms }),
+    };
+
+    await firstValueFrom(
+      this.httpService.put(
+        `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+        body, // Cuerpo con datos para nueva reproducción
+        { headers: this.getAuthHeader() }
+      )
+    );
+    console.log(`Playback started on device ${deviceId}`, body);
+  } catch (error: unknown) {
+    // ... manejo de errores existente ...
+    if (error instanceof Error) {
+      console.error('Error en Spotify API (playTrack):', error.message);
+      if ('response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {
+        const spotifyError = (error.response as any).data;
+        if (spotifyError && spotifyError.error && spotifyError.error.message) {
+          throw new Error(`Spotify API error: ${spotifyError.error.message}`);
+        }
+      }
+      throw new Error(`Error al reproducir/reanudar: ${error.message}`);
+    }
+    throw new Error('Error desconocido al reproducir/reanudar pista');
   }
+}
 
   async pauseTrack(): Promise<void> {
     try {
@@ -140,35 +172,88 @@ export class SpotifyService {
     }
   }
 
-  async searchAll(query: string, limit: number = 5) {
-    if (!query || query.trim().length === 0) {
-      throw new Error('El parámetro "query" no puede estar vacío.');
-    }
-
-    const url = `https://api.spotify.com/v1/search`;
-    const params = new URLSearchParams({
-      q: encodeURIComponent(query),
-      type: 'track,album,artist',
-      limit: limit.toString(),
-    });
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(`${url}?${params.toString()}`, {
-          headers: this.getAuthHeader(),
-        }),
-      );
-
-      return {
-        tracks: response.data.tracks?.items || [],
-        albums: response.data.albums?.items || [],
-        artists: response.data.artists?.items || [],
-      };
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        throw new Error(`Error en búsqueda: ${error.message}`);
-      }
-      throw new Error('Error desconocido en búsqueda');
-    }
+async searchAll(query: string, limit: number = 900) {
+  if (!query || query.trim().length === 0) {
+    throw new Error('El parámetro "query" no puede estar vacío.');
   }
+  const url = `https://api.spotify.com/v1/search`;
+  const params = new URLSearchParams({
+    q: encodeURIComponent(query),
+    type: 'track,album,artist,playlist',
+    limit: limit.toString(),
+  });
+  try {
+    const response = await firstValueFrom(
+      this.httpService.get(`${url}?${params.toString()}`, {
+        headers: this.getAuthHeader(),
+      }),
+    );
+    return {
+      tracks: response.data.tracks?.items || [],
+      albums: response.data.albums?.items || [],
+      artists: response.data.artists?.items || [],
+      playlists: response.data.playlists?.items || [],
+    };
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Error en Spotify API (searchAll):', error.message);
+      if ('response' in error && error.response && typeof error.response === 'object' && 'data' in error.response) {
+          const spotifyError = (error.response as any).data;
+          if (spotifyError && spotifyError.error && spotifyError.error.message) {
+             // Propagar errores específicos de la API de Spotify
+             throw new Error(`Spotify API error: ${spotifyError.error.message}`);
+          }
+      }
+      throw new Error(`Error desconocido en búsqueda: ${error.message}`);
+    }
+    throw new Error('Error desconocido en búsqueda');
+  }
+}
+
+  async nextTrack(deviceId: string): Promise<void> {
+  try {
+    await firstValueFrom(
+      this.httpService.post(
+        `https://api.spotify.com/v1/me/player/next?device_id=${deviceId}`,
+        {},
+        { headers: this.getAuthHeader() }
+      )
+    );
+  } catch (error) {
+    console.error('Error al reproducir siguiente pista:', error);
+    throw new Error('Failed to play next track');
+  }
+}
+
+async previousTrack(deviceId: string): Promise<void> {
+  try {
+    await firstValueFrom(
+      this.httpService.post(
+        ` https://api.spotify.com/v1/me/player/previous?device_id=${deviceId}`,
+        {},
+        { headers: this.getAuthHeader() }
+      )
+    );
+  } catch (error) {
+    console.error('Error al reproducir pista anterior:', error);
+    throw new Error('Failed to play previous track');
+  }
+}
+
+async seekTrack(positionMs: number, deviceId: string): Promise<void> {
+  try {
+    await firstValueFrom(
+      this.httpService.put(
+        `https://api.spotify.com/v1/me/player/seek?position_ms=${positionMs}&device_id=${deviceId}`,
+        {}, // No hay cuerpo en esta solicitud
+        { headers: this.getAuthHeader() }
+      )
+    );
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error al buscar posición: ${error.message}`);
+    }
+    throw new Error('Error desconocido al buscar posición');
+  }
+}
 }
