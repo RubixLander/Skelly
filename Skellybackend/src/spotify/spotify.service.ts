@@ -255,5 +255,73 @@ async seekTrack(positionMs: number, deviceId: string): Promise<void> {
     }
     throw new Error('Error desconocido al buscar posición');
   }
+} //adada
+
+async getArtistTopTracks(artistId: string): Promise<any> {
+  try {
+    const response = await firstValueFrom(
+      this.httpService.get(
+        `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`,
+        { headers: this.getAuthHeader() }
+      )
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error al obtener top tracks del artista: ${error.message}`);
+    }
+    throw new Error('Error desconocido al obtener top tracks del artista');
+  }
+}
+
+async getAlbumTracks(albumId: string): Promise<any> {
+  try {
+    const response = await firstValueFrom(
+      this.httpService.get(
+        `https://api.spotify.com/v1/albums/${albumId}/tracks`,
+        { headers: this.getAuthHeader() }
+      )
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error al obtener tracks del álbum: ${error.message}`);
+    }
+    throw new Error('Error desconocido al obtener tracks del álbum');
+  }
+}
+
+async getPlaylistTracks(playlistId: string): Promise<any> {
+  try {
+    const response = await firstValueFrom(
+      this.httpService.get(
+        `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
+        { headers: this.getAuthHeader() }
+      )
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error al obtener tracks de la playlist: ${error.message}`);
+    }
+    throw new Error('Error desconocido al obtener tracks de la playlist');
+  }
+} //adada
+
+async getArtistAlbums(artistId: string): Promise<any> {
+  try {
+    const response = await firstValueFrom(
+      this.httpService.get(
+        `https://api.spotify.com/v1/artists/${artistId}/albums`,
+        { headers: this.getAuthHeader() }
+      )
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error al obtener álbumes del artista: ${error.message}`);
+    }
+    throw new Error('Error desconocido al obtener álbumes del artista');
+  }
 }
 }

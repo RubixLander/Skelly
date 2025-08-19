@@ -1,102 +1,131 @@
-// src/pages/player-test.tsx
+/**
+ * Componente principal de la página de prueba del reproductor.
+ * 
+ * Este componente gestiona la autenticación con Spotify, la búsqueda de contenido,
+ * la visualización de resultados y la integración con el reproductor de Spotify.
+ * 
+ * @remarks
+ * - Requiere que el contexto de Spotify esté disponible a través de SpotifyProvider
+ * - Redirige automáticamente a la página de inicio si el usuario no está autenticado
+ * - Integra el componente SearchResults para mostrar resultados de búsqueda formateados
+ * - Muestra el reproductor de Spotify en la parte inferior cuando hay un dispositivo conectado
+ * 
+ * @example
+ * ```tsx
+ * // En _app.tsx
+ * <SpotifyProvider>
+ *   <PlayerTestPage />
+ * </SpotifyProvider>
+ * ```
+ */
 import React, { useContext, useState } from 'react';
 import { useRouter } from 'next/router';
 import { SpotifyContext } from '../context/SpotifyContext';
 import SpotifyAuthButton from '../components/SpotifyAuthButton';
 import SpotifyPlayer from '../components/SpotifyPlayer';
 import SearchBar from '../components/SearchBar';
+import SearchResults from '../components/SearchResults';
 import apiClient from '../lib/api';
 import { SearchResult } from '../types/spotify-types';
 
 const PlayerTestPage: React.FC = () => {
+  // Hook de navegación de Next.js
   const router = useRouter();
+  
+  // Obtener contexto de Spotify - contiene estado del reproductor, autenticación, etc.
   const context = useContext(SpotifyContext);
 
+  // Verificación de seguridad: el contexto debe estar disponible
   if (!context) {
     throw new Error('PlayerTestPage must be used within a SpotifyProvider');
   }
 
+  // Extraer valores relevantes del contexto de Spotify
   const { deviceId, isAuthenticated, isLoading, error: contextError, playUri } = context;
 
+  // Estado local para manejar resultados de búsqueda
   const [searchResults, setSearchResults] = useState<SearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Redirigir si no está autenticado
+  /**
+   * Efecto para redirigir al usuario a la página de inicio si no está autenticado
+   * Se ejecuta cuando cambian los estados de autenticación o carga
+   */
   React.useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/');
     }
   }, [isAuthenticated, isLoading, router]);
 
+  /**
+   * Maneja la búsqueda de contenido en Spotify
+   * 
+   * @param query - Término de búsqueda ingresado por el usuario
+   * 
+   * @remarks
+   * - Realiza una llamada a la API de Spotify a través del backend
+   * - Limita los resultados a 50 items por categoría
+   * - Maneja estados de carga y errores
+   */
   const handleSearch = async (query: string) => {
+    // Validación básica: no buscar si la consulta está vacía
     if (!query.trim()) return;
+    
+    // Iniciar estado de búsqueda
     setIsSearching(true);
     setLocalError(null);
 
     try {
+      // Realizar búsqueda a través del backend (proxy para la API de Spotify)
       const response = await apiClient.get(`/spotify/search?q=${encodeURIComponent(query)}&limit=50`);
       setSearchResults(response.data);
     } catch (err: any) {
+      // Manejo de errores: registrar en consola y mostrar al usuario
       console.error('Search error:', err);
       setLocalError(err.response?.data?.message || err.message || 'Search failed');
       setSearchResults(null);
     } finally {
+      // Finalizar estado de búsqueda independientemente del resultado
       setIsSearching(false);
     }
   };
 
-  // Función para reproducir un URI usando el contexto
+  /**
+   * Maneja la reproducción de un URI específico usando el contexto de Spotify
+   * 
+   * @param uri - URI de Spotify (track, album, artist, playlist)
+   * 
+   * @remarks
+   * - Delega la lógica de reproducción al contexto de Spotify
+   * - Maneja errores de reproducción
+   */
   const handlePlayUri = async (uri: string) => {
     try {
-      await playUri(uri); // Usar la función del contexto
-      // alert('Reproduciendo...'); // Opcional: feedback visual
+      // Usar función del contexto para reproducir el URI
+      await playUri(uri);
     } catch (err: any) {
+      // Manejo de errores de reproducción
       console.error('Play error:', err);
       setLocalError(err.message || 'Failed to play item');
     }
   };
 
-  // Función para obtener la URL de la imagen
-  const getImageUrl = (item: any, type: 'track' | 'album' | 'artist' | 'playlist'): string => {
-    try {
-      if (type === 'track' && item.album && Array.isArray(item.album.images) && item.album.images.length > 0) {
-        return item.album.images[0]?.url || 'https://via.placeholder.com/300x300?text=No+Image';
-      }
-      if ((type === 'album' || type === 'playlist' || type === 'artist') && Array.isArray(item.images) && item.images.length > 0) {
-        return item.images[0]?.url || 'https://via.placeholder.com/300x300?text=No+Image';
-      }
-    } catch (e) {
-      console.warn('Error getting image URL for item:', item, type, e);
-    }
-    return 'https://via.placeholder.com/300x300?text=No+Image';
-  };
-
-  // Función para obtener los nombres de los artistas
-  const getArtistNames = (item: any): string => {
-    if (!item) return 'Desconocido';
-    if (item.artists && Array.isArray(item.artists) && item.artists.length > 0) {
-      return item.artists
-        .filter((artist: any) => artist && artist.name) // Filtrar artistas nulos y sin nombre
-        .map((artist: any) => artist.name)
-        .join(', ');
-    }
-    return 'Desconocido';
-  };
-
+  // Renderizado condicional durante la carga inicial
   if (isLoading) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h1>Player Test Page</h1>
+        <h1>SkellyTunes</h1>
         <p>Checking authentication and initializing player...</p>
       </div>
     );
   }
 
+  // Renderizado condicional si hay error en el contexto de Spotify
   if (contextError) {
     return (
       <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>
-        <h1>Player Test Page</h1>
+        <h1>SkellyTunes</h1>
         <p>Error: {contextError}</p>
         <button
           onClick={() => window.location.reload()}
@@ -118,26 +147,28 @@ const PlayerTestPage: React.FC = () => {
     );
   }
 
+  // Renderizado condicional si el usuario no está autenticado
   if (!isAuthenticated) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
-        <h1>Player Test Page</h1>
+        <h1>SkellyTunes</h1>
         <p>You are not authenticated.</p>
         <SpotifyAuthButton />
       </div>
     );
   }
 
+  // Renderizado principal cuando todo está correctamente configurado
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', paddingBottom: '100px' }}>
-      <h1 style={{ textAlign: 'center' }}>Player Test Page</h1>
+      <h1 style={{ textAlign: 'center' }}>SkellyTunes</h1>
 
-      {/* Barra de búsqueda */}
+      {/* Barra de búsqueda centrada */}
       <div style={{ marginBottom: '30px', textAlign: 'center' }}>
         <SearchBar onSearch={handleSearch} />
       </div>
 
-      {/* Mostrar errores */}
+      {/* Mostrar errores de búsqueda si existen */}
       {localError && (
         <div style={{ color: 'red', textAlign: 'center', marginBottom: '20px' }}>
           Error: {localError}
@@ -150,164 +181,14 @@ const PlayerTestPage: React.FC = () => {
         </div>
       )}
 
-      {/* Mostrar resultados de búsqueda */}
-      {isSearching && <p style={{ textAlign: 'center' }}>Buscando...</p>}
-      
-      {searchResults && !isSearching && (
-        <div>
-          {/* Canciones */}
-          {searchResults.tracks && searchResults.tracks.length > 0 && (
-            <div style={{ marginBottom: '30px' }}>
-              <h2>Canciones</h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-                {searchResults.tracks.filter(track => track !== null).map((track) => (
-                  <div key={track.id} style={{ width: '150px', textAlign: 'center' }}>
-                    <img
-                      src={getImageUrl(track, 'track')}
-                      alt={track.name || 'Unknown Track'}
-                      style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px' }}
-                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x300?text=No+Image'; }}
-                    />
-                    <p style={{ fontWeight: 'bold', margin: '5px 0 0 0' }}>{track.name || 'Unknown Track'}</p>
-                    <p style={{ fontSize: '14px', color: '#666', margin: '2px 0' }}>{getArtistNames(track)}</p>
-                    <button
-                      onClick={() => track.uri && handlePlayUri(track.uri)}
-                      disabled={!track.uri} // Deshabilitar si no hay URI
-                      style={{
-                        marginTop: '5px',
-                        padding: '5px 10px',
-                        backgroundColor: track.uri ? '#1DB954' : '#ccc', // Cambiar color si está deshabilitado
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '15px',
-                        cursor: track.uri ? 'pointer' : 'not-allowed',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Reproducir
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Álbumes */}
-          {searchResults.albums && searchResults.albums.length > 0 && (
-            <div style={{ marginBottom: '30px' }}>
-              <h2>Álbumes</h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-                 {searchResults.albums.filter(album => album !== null).map((album) => (
-                  <div key={album.id} style={{ width: '150px', textAlign: 'center' }}>
-                    <img
-                      src={getImageUrl(album, 'album')}
-                      alt={album.name || 'Unknown Album'}
-                      style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px' }}
-                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x300?text=No+Image'; }}
-                    />
-                    <p style={{ fontWeight: 'bold', margin: '5px 0 0 0' }}>{album.name || 'Unknown Album'}</p>
-                    <p style={{ fontSize: '14px', color: '#666', margin: '2px 0' }}>{getArtistNames(album)}</p>
-                    <button
-                      onClick={() => album.uri && handlePlayUri(album.uri)}
-                      disabled={!album.uri}
-                      style={{
-                        marginTop: '5px',
-                        padding: '5px 10px',
-                        backgroundColor: album.uri ? '#1DB954' : '#ccc',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '15px',
-                        cursor: album.uri ? 'pointer' : 'not-allowed',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Reproducir Álbum
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+      {/* Componente de resultados de búsqueda - delega la presentación */}
+      <SearchResults 
+        searchResults={searchResults}
+        isSearching={isSearching}
+        onPlayUri={handlePlayUri}
+      />
 
-          {/* Artistas */}
-          {searchResults.artists && searchResults.artists.length > 0 && (
-            <div style={{ marginBottom: '30px' }}>
-              <h2>Artistas</h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-                 {searchResults.artists.filter(artist => artist !== null).map((artist) => (
-                  <div key={artist.id} style={{ width: '150px', textAlign: 'center' }}>
-                    <img
-                      src={getImageUrl(artist, 'artist')}
-                      alt={artist.name || 'Unknown Artist'}
-                      style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px' }}
-                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x300?text=No+Image'; }}
-                    />
-                    <p style={{ fontWeight: 'bold', margin: '5px 0 0 0' }}>{artist.name || 'Unknown Artist'}</p>
-                    <button
-                      onClick={() => artist.uri && handlePlayUri(artist.uri)}
-                      disabled={!artist.uri}
-                      style={{
-                        marginTop: '5px',
-                        padding: '5px 10px',
-                        backgroundColor: artist.uri ? '#1DB954' : '#ccc',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '15px',
-                        cursor: artist.uri ? 'pointer' : 'not-allowed',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Reproducir Top Tracks
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Playlists */}
-          {searchResults.playlists && searchResults.playlists.length > 0 && (
-            <div style={{ marginBottom: '30px' }}>
-              <h2>Playlists</h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px' }}>
-                 {searchResults.playlists.filter(playlist => playlist !== null).map((playlist) => (
-                  <div key={playlist.id} style={{ width: '150px', textAlign: 'center' }}>
-                    <img
-                      src={getImageUrl(playlist, 'playlist')}
-                      alt={playlist.name || 'Unknown Playlist'}
-                      style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px' }}
-                      onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x300?text=No+Image'; }}
-                    />
-                    <p style={{ fontWeight: 'bold', margin: '5px 0 0 0' }}>{playlist.name || 'Unknown Playlist'}</p>
-                    <p style={{ fontSize: '14px', color: '#666', margin: '2px 0' }}>
-                      Por {playlist.owner?.display_name || 'Desconocido'}
-                    </p>
-                    <button
-                      onClick={() => playlist.uri && handlePlayUri(playlist.uri)}
-                      disabled={!playlist.uri}
-                      style={{
-                        marginTop: '5px',
-                        padding: '5px 10px',
-                        backgroundColor: playlist.uri ? '#1DB954' : '#ccc',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '15px',
-                        cursor: playlist.uri ? 'pointer' : 'not-allowed',
-                        fontSize: '12px'
-                      }}
-                    >
-                      Reproducir Playlist
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Reproductor en la parte inferior */}
-      {/* CORRECCIÓN: Mostrar siempre que haya deviceId */}
+      {/* Reproductor de Spotify - solo se muestra si hay dispositivo conectado */}
       {deviceId && <SpotifyPlayer />}
     </div>
   );

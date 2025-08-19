@@ -167,9 +167,6 @@ const SpotifyPlayer: React.FC = () => {
     }
   };
 
-  // No mostrar el reproductor si:
-  // 1. Está cargando
-  // 2. No hay pista activa
   if (isLoading) {
     return (
       <div style={{ padding: '10px', textAlign: 'center' }}>

@@ -319,5 +319,69 @@ async seek(
       }
       throw new InternalServerErrorException('Search failed');
     }
+  }// adada
+
+  @Get('artist/:id/top-tracks')
+async getArtistTopTracks(@Param('id') id: string, @Req() req: Request) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) throw new BadRequestException('Access token required');
+
+  this.spotifyService.setAccessToken(token);
+
+  try {
+    const data = await this.spotifyService.getArtistTopTracks(id);
+    return data;
+  } catch (error) {
+    console.error('Error fetching artist top tracks:', error);
+    throw new InternalServerErrorException('Failed to fetch artist top tracks');
   }
+}
+
+@Get('album/:id/tracks')
+async getAlbumTracks(@Param('id') id: string, @Req() req: Request) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) throw new BadRequestException('Access token required');
+
+  this.spotifyService.setAccessToken(token);
+
+  try {
+    const data = await this.spotifyService.getAlbumTracks(id);
+    return data;
+  } catch (error) {
+    console.error('Error fetching album tracks:', error);
+    throw new InternalServerErrorException('Failed to fetch album tracks');
+  }
+}
+
+@Get('playlist/:id/tracks')
+async getPlaylistTracks(@Param('id') id: string, @Req() req: Request) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) throw new BadRequestException('Access token required');
+
+  this.spotifyService.setAccessToken(token);
+
+  try {
+    const data = await this.spotifyService.getPlaylistTracks(id);
+    return data;
+  } catch (error) {
+    console.error('Error fetching playlist tracks:', error);
+    throw new InternalServerErrorException('Failed to fetch playlist tracks');
+  }
+} //adada
+
+@Get('artist/:id/albums')
+async getArtistAlbums(@Param('id') id: string, @Req() req: Request) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) throw new BadRequestException('Access token required');
+
+  this.spotifyService.setAccessToken(token);
+
+  try {
+    const data = await this.spotifyService.getArtistAlbums(id);
+    return data;
+  } catch (error) {
+    console.error('Error fetching artist albums:', error);
+    throw new InternalServerErrorException('Failed to fetch artist albums');
+  }
+}
 }

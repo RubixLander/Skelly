@@ -1,0 +1,177 @@
+/* src/components/SearchResults.css */
+
+.search-results-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 2%;
+  font-family: Arial, sans-serif;
+}
+
+/* Pestañas de navegación */
+.tabs-container {
+  display: flex;
+  gap: 4%;
+  margin-bottom: 5%;
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  padding: 2% 2;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  flex: 1;
+  min-width: 20%;
+  transition: background-color 0.2s ease;
+}
+
+.tab-button.active {
+  background-color: #1DB954;
+}
+
+.tab-button.inactive {
+  background-color: #333;
+}
+
+.tab-button:hover {
+  opacity: 0.9;
+}
+
+/* Grid de resultados - Diseño adaptativo */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 15px; /* Espacio reducido entre tarjetas en ambos ejes */
+  padding: 2%;
+}
+
+/* Estilo común para todas las tarjetas */
+.result-item {
+  text-align: center;
+  background: #f9f9f9;
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.result-item:hover {
+  transform: scale(1.02);
+}
+
+/* Imagen de las tarjetas */
+.item-image {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Título de las tarjetas */
+.item-title {
+  font-weight: bold;
+  margin: 5px 0 0 0;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #333;
+}
+
+/* Subtítulo (artistas, dueños, etc.) */
+.item-subtitle {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 2px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Botones de reproducción */
+.play-button {
+  margin-top: 5px;
+  padding: 5px 10px;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  width: 100%;
+  max-width: 120px;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.play-button.enabled {
+  background-color: #1DB954;
+}
+
+.play-button.disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.play-button.enabled:hover {
+  background-color: #1ed760;
+}
+
+/* Mensajes */
+.searching-message {
+  text-align: center;
+  font-size: 1rem;
+  color: #666;
+}
+
+.error-message {
+  color: red;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.clear-button {
+  margin-left: 10px;
+  background: none;
+  border: 1px solid #ccc;
+  color: red;
+  padding: 2px 5px;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.details-button {
+  margin-top: 5px;
+  padding: 5px 10px;
+  color: white;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  width: 100%;
+  max-width: 120px;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+  background-color: #1DB954;
+}
+
+.details-button:hover {
+  background-color: #1ed760;
+}
+
+.details-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
