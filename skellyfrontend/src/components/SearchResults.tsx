@@ -1,7 +1,7 @@
 // src/components/SearchResults.tsx
 import React, { useState } from 'react';
 import { SpotifyTrack, SpotifyAlbum, SpotifyArtist, SpotifyPlaylist, SearchResult } from '../types/spotify-types';
-import ItemDetails from './itemDetails'; // Importar el nuevo componente
+import MusicItemDetails from './MusicItemDetails';
 import '../styles/searchResults.css';
 
 interface SearchResultsProps {
@@ -10,7 +10,6 @@ interface SearchResultsProps {
   onPlayUri: (uri: string) => void;
 }
 
-// Tipo para el estado de navegación
 type NavigationState = 
   | { view: 'list' }
   | { view: 'details'; item: SpotifyArtist | SpotifyAlbum | SpotifyPlaylist; type: 'artist' | 'album' | 'playlist' };
@@ -19,44 +18,31 @@ const SearchResults: React.FC<SearchResultsProps> = ({ searchResults, isSearchin
   const [navigation, setNavigation] = useState<NavigationState>({ view: 'list' });
   const [activeTab, setActiveTab] = useState<'tracks' | 'albums' | 'artists' | 'playlists'>('tracks');
 
-// Función para obtener la imagen del track
-const getImageUrl = (itemData: any, type: 'track' | 'album' | 'artist' | 'playlist'): string => {
-  try {
-    if (type === 'track') {
-      // Para tracks, la imagen viene del álbum
-      if (itemData.album && Array.isArray(itemData.album.images) && itemData.album.images.length > 0) {
-        return itemData.album.images[0]?.url || 'https://via.placeholder.com/300x300?text=No+Image';
+  const getImageUrl = (itemData: any, type: 'track' | 'album' | 'artist' | 'playlist'): string => {
+    try {
+      if (type === 'track') {
+        if (itemData.album?.images?.length > 0) {
+          return itemData.album.images[0]?.url;
+        }
+      } else if (itemData.images?.length > 0) {
+        return itemData.images[0]?.url;
       }
-      return 'https://via.placeholder.com/300x300?text=No+Image';
-    }
-    
-    if ((type === 'album' || type === 'playlist' || type === 'artist') && Array.isArray(itemData.images) && itemData.images.length > 0) {
-      return itemData.images[0]?.url || 'https://via.placeholder.com/300x300?text=No+Image';
-    }
-  } catch (e) {
-    console.warn('Error getting image URL for item:', itemData, type, e);
-  }
-  return 'https://via.placeholder.com/300x300?text=No+Image';
-};
+    } catch {}
+    return 'https://via.placeholder.com/300x300?text=No+Image';
+  };
 
-  // Función para obtener los nombres de los artistas
   const getArtistNames = (item: any): string => {
     if (!item) return 'Desconocido';
-    if (item.artists && Array.isArray(item.artists) && item.artists.length > 0) {
-      return item.artists
-        .filter((artist: any) => artist && artist.name)
-        .map((artist: any) => artist.name)
-        .join(', ');
+    if (item.artists?.length > 0) {
+      return item.artists.map((artist: any) => artist.name).join(', ');
     }
     return 'Desconocido';
   };
 
-  // Función para manejar la navegación a los detalles
   const handleViewDetails = (item: SpotifyArtist | SpotifyAlbum | SpotifyPlaylist, type: 'artist' | 'album' | 'playlist') => {
     setNavigation({ view: 'details', item, type });
   };
 
-  // Función para volver a la lista
   const handleBackToList = () => {
     setNavigation({ view: 'list' });
   };
@@ -68,14 +54,10 @@ const getImageUrl = (itemData: any, type: 'track' | 'album' | 'artist' | 'playli
       case 'tracks':
         return (
           <div className="results-grid">
-            {searchResults.tracks?.filter(track => track !== null).map((track) => (
+            {searchResults.tracks?.map((track) => (
               <div key={track.id} className="result-item">
-                <img
-                  src={getImageUrl(track, 'track')}
-                  alt={track.name || 'Unknown Track'}
-                  className="item-image"
-                />
-                <p className="item-title">{track.name || 'Unknown Track'}</p>
+                <img src={getImageUrl(track, 'track')} alt={track.name} className="item-image" />
+                <p className="item-title">{track.name}</p>
                 <p className="item-subtitle">{getArtistNames(track)}</p>
                 <button
                   onClick={() => track.uri && onPlayUri(track.uri)}
@@ -91,28 +73,26 @@ const getImageUrl = (itemData: any, type: 'track' | 'album' | 'artist' | 'playli
       case 'albums':
         return (
           <div className="results-grid">
-            {searchResults.albums?.filter(album => album !== null).map((album) => (
-              <div key={album.id} className="result-item">
-                <img
-                  src={getImageUrl(album, 'album')}
-                  alt={album.name || 'Unknown Album'}
-                  className="item-image"
-                />
-                <p className="item-title">{album.name || 'Unknown Album'}</p>
+            {searchResults.albums?.map((album) => (
+              <div
+                key={album.id}
+                className="result-item"
+                onClick={() => handleViewDetails(album, 'album')}
+                style={{ cursor: 'pointer' }}
+              >
+                <img src={getImageUrl(album, 'album')} alt={album.name} className="item-image" />
+                <p className="item-title">{album.name}</p>
                 <p className="item-subtitle">{getArtistNames(album)}</p>
                 <div className="item-actions">
                   <button
-                    onClick={() => album.uri && onPlayUri(album.uri)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      album.uri && onPlayUri(album.uri);
+                    }}
                     disabled={!album.uri}
                     className={album.uri ? 'play-button enabled' : 'play-button disabled'}
                   >
                     Reproducir Álbum
-                  </button>
-                  <button
-                    onClick={() => handleViewDetails(album, 'album')}
-                    className="details-button"
-                  >
-                    Ver Detalles
                   </button>
                 </div>
               </div>
@@ -122,66 +102,69 @@ const getImageUrl = (itemData: any, type: 'track' | 'album' | 'artist' | 'playli
       case 'artists':
         return (
           <div className="results-grid">
-            {searchResults.artists?.filter(artist => artist !== null).map((artist) => (
-              <div key={artist.id} className="result-item">
-                <img
-                  src={getImageUrl(artist, 'artist')}
-                  alt={artist.name || 'Unknown Artist'}
-                  className="item-image"
-                />
-                <p className="item-title">{artist.name || 'Unknown Artist'}</p>
+            {searchResults.artists?.map((artist) => (
+              <div
+                key={artist.id}
+                className="result-item"
+                onClick={() => handleViewDetails(artist, 'artist')}
+                style={{ cursor: 'pointer' }}
+              >
+                <img src={getImageUrl(artist, 'artist')} alt={artist.name} className="item-image" />
+                <p className="item-title">{artist.name}</p>
                 <div className="item-actions">
                   <button
-                    onClick={() => artist.uri && onPlayUri(artist.uri)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      artist.uri && onPlayUri(artist.uri);
+                    }}
                     disabled={!artist.uri}
                     className={artist.uri ? 'play-button enabled' : 'play-button disabled'}
                   >
                     Reproducir Top Tracks
                   </button>
-                  <button
-                    onClick={() => handleViewDetails(artist, 'artist')}
-                    className="details-button"
-                  >
-                    Ver Detalles
-                  </button>
                 </div>
               </div>
             ))}
           </div>
         );
-      case 'playlists':
-        return (
-          <div className="results-grid">
-            {searchResults.playlists?.filter(playlist => playlist !== null).map((playlist) => (
-              <div key={playlist.id} className="result-item">
-                <img
-                  src={getImageUrl(playlist, 'playlist')}
-                  alt={playlist.name || 'Unknown Playlist'}
-                  className="item-image"
-                />
-                <p className="item-title">{playlist.name || 'Unknown Playlist'}</p>
-                <p className="item-subtitle">
-                  Por {playlist.owner?.display_name || 'Desconocido'}
-                </p>
-                <div className="item-actions">
-                  <button
-                    onClick={() => playlist.uri && onPlayUri(playlist.uri)}
-                    disabled={!playlist.uri}
-                    className={playlist.uri ? 'play-button enabled' : 'play-button disabled'}
-                  >
-                    Reproducir Playlist
-                  </button>
-                  <button
-                    onClick={() => handleViewDetails(playlist, 'playlist')}
-                    className="details-button"
-                  >
-                    Ver Detalles
-                  </button>
-                </div>
-              </div>
-            ))}
+case 'playlists':
+  return (
+    <div className="results-grid">
+      {searchResults.playlists
+        ?.filter((playlist): playlist is SpotifyPlaylist => playlist !== null) // 🔥 evita nulls
+        .map((playlist) => (
+          <div
+            key={playlist.id}
+            className="result-item"
+            onClick={() => handleViewDetails(playlist, 'playlist')}
+            style={{ cursor: 'pointer' }}
+          >
+            <img
+              src={getImageUrl(playlist, 'playlist')}
+              alt={playlist?.name || 'Unknown Playlist'}
+              className="item-image"
+            />
+            <p className="item-title">{playlist?.name || 'Unknown Playlist'}</p>
+            <p className="item-subtitle">
+              Por {playlist?.owner?.display_name || 'Desconocido'}
+            </p>
+            <div className="item-actions">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playlist.uri && onPlayUri(playlist.uri);
+                }}
+                disabled={!playlist.uri}
+                className={playlist.uri ? 'play-button enabled' : 'play-button disabled'}
+              >
+                Reproducir Playlist
+              </button>
+            </div>
           </div>
-        );
+        ))}
+    </div>
+  );
+
       default:
         return null;
     }
@@ -191,10 +174,9 @@ const getImageUrl = (itemData: any, type: 'track' | 'album' | 'artist' | 'playli
     return <p className="searching-message">Buscando...</p>;
   }
 
-  // Renderizar detalles si es el caso
   if (navigation.view === 'details') {
     return (
-      <ItemDetails
+      <MusicItemDetails
         item={navigation.item}
         itemType={navigation.type}
         onPlayUri={onPlayUri}
@@ -209,7 +191,6 @@ const getImageUrl = (itemData: any, type: 'track' | 'album' | 'artist' | 'playli
 
   return (
     <div className="search-results-container">
-      {/* Pestañas de navegación */}
       <div className="tabs-container">
         <button
           onClick={() => setActiveTab('tracks')}
@@ -237,10 +218,7 @@ const getImageUrl = (itemData: any, type: 'track' | 'album' | 'artist' | 'playli
         </button>
       </div>
 
-      {/* Resultados filtrados por pestaña */}
-      <div>
-        {renderResults()}
-      </div>
+      <div>{renderResults()}</div>
     </div>
   );
 };

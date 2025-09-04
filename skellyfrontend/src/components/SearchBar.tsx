@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 
 interface SearchBarProps {
-  onSearch: (query: string) => void; // Función que se llama cuando se realiza la búsqueda
+  onSearch: (query: string) => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
@@ -19,19 +19,13 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+    <div className="search-bar-container">
       <input
         type="text"
         value={searchQuery}
         onChange={handleInputChange}
-        placeholder="Buscar canciones, álbumes, artistas o playlists..."
-        style={{
-          padding: '10px',
-          width: '300px',
-          marginRight: '10px',
-          borderRadius: '4px',
-          border: '1px solid #ddd'
-        }}
+        placeholder="Buscar canciones, álbumes, artistas o playlists!"
+        className="search-input"
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             handleSearch();
@@ -40,16 +34,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
       />
       <button
         onClick={handleSearch}
-        style={{
-          padding: '10px 20px',
-          backgroundColor: '#1DB954',
-          color: 'white',
-          border: 'none',
-          borderRadius: '20px',
-          cursor: 'pointer',
-          fontSize: '16px',
-          fontWeight: 'bold'
-        }}
+        className="search-button"
       >
         Buscar
       </button>

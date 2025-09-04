@@ -1,114 +1,61 @@
 // src/pages/index.tsx
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import SpotifyAuthButton from '../components/SpotifyAuthButton';
-import apiClient from '../lib/api';
+import React, { useContext, useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import { usePlayer } from "../context/PlayerContext";
+import { SpotifyContext } from "../context/SpotifyContext";
+import SpotifyAuthButton from "../components/SpotifyAuthButton";
+import SearchResults from "../components/SearchResults";
+import SpotifyPlayer from "../components/SpotifyPlayer";
+import Header from "../components/header";
 
-export default function Home() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const HomePage: React.FC = () => {
+  const { searchResults, isSearching, handlePlayUri, localError, clearError } =
+    usePlayer();
+
+  const { isAuthenticated, isLoading, error: contextError, deviceId } =
+    useContext(SpotifyContext);
+
+  const [activeTab, setActiveTab] = useState("Canciones");
   const router = useRouter();
 
-  // Verificar autenticación
+  // ✅ Detectar autenticación de Spotify y mandar al login SOLO si no se ha pasado aún
   useEffect(() => {
-    const checkAuth = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // Verificar parámetros de la URL (callback de autenticación)
-        const urlParams = new URLSearchParams(window.location.search);
-        const accessTokenFromUrl = urlParams.get('access_token');
-        const errorParam = urlParams.get('error');
-
-        if (errorParam) {
-          setError('Authentication failed');
-          setIsLoading(false);
-          return;
-        }
-
-        // Si hay token en la URL (callback de autenticación)
-        if (accessTokenFromUrl) {
-          localStorage.setItem('access_token', accessTokenFromUrl);
-          const refreshToken = urlParams.get('refresh_token');
-          if (refreshToken) {
-            localStorage.setItem('refresh_token', refreshToken);
-          }
-          // Limpiar la URL
-          window.history.replaceState({}, '', window.location.pathname);
-          setIsAuthenticated(true);
-          // REDIRECCIÓN INMEDIATA A /PLAYER-TEST
-          router.push('/player-test');
-          return;
-        }
-
-        // Verificar token almacenado en localStorage
-        const storedAccessToken = localStorage.getItem('access_token');
-        if (storedAccessToken) {
-          try {
-            // Verificar token con el backend
-            const response = await apiClient.get('/spotify/check-auth');
-            if (response.data.authenticated) {
-              setIsAuthenticated(true);
-              // REDIRECCIÓN INMEDIATA A /PLAYER-TEST
-              router.push('/player-test');
-            } else {
-              // Token inválido, limpiar y mostrar botón de autenticación
-              localStorage.removeItem('access_token');
-              localStorage.removeItem('refresh_token');
-              setIsAuthenticated(false);
-            }
-          } catch (err: any) {
-            console.error('Stored token verification failed:', err);
-            setError('Failed to verify stored token');
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            setIsAuthenticated(false);
-          }
-        } else {
-          // No hay token almacenado, mostrar botón de autenticación
-          setIsAuthenticated(false);
-        }
-      } catch (err: any) {
-        console.error('Auth check error:', err);
-        setError('Authentication check failed');
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
+    if (!isLoading && isAuthenticated) {
+      const alreadyLogged = localStorage.getItem("appLoggedIn");
+      if (!alreadyLogged) {
+        router.push("/login");
       }
-    };
+    }
+  }, [isAuthenticated, isLoading, router]);
 
-    checkAuth();
-  }, [router]);
-
+  // Estado inicial (cargando)
   if (isLoading) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
+      <div style={{ padding: "20px", textAlign: "center" }}>
         <h1>SkellyTunes</h1>
-        <p>Checking authentication status...</p>
+        <p>Checking authentication and initializing player...</p>
       </div>
     );
   }
 
-  if (error) {
+  // Error global de Spotify
+  if (contextError) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>
+      <div style={{ padding: "20px", textAlign: "center", color: "red" }}>
         <h1>SkellyTunes</h1>
-        <p>Error: {error}</p>
+        <p>Error: {contextError}</p>
         <button
           onClick={() => window.location.reload()}
           style={{
-            margin: '10px',
-            padding: '10px 20px',
-            backgroundColor: '#1DB954',
-            color: 'white',
-            border: 'none',
-            borderRadius: '20px',
-            cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold'
+            margin: "10px",
+            padding: "10px 20px",
+            backgroundColor: "#1DB954",
+            color: "white",
+            border: "none",
+            borderRadius: "20px",
+            cursor: "pointer",
+            fontSize: "16px",
+            fontWeight: "bold",
           }}
         >
           Try Again
@@ -117,25 +64,41 @@ export default function Home() {
     );
   }
 
-  // Si el usuario está autenticado, redirigir a /player-test
-  // (Esta comprobación adicional puede ayudar si la redirección inicial falla)
-  if (isAuthenticated) {
-    router.push('/player-test');
+  // Si no está autenticado → botón de login Spotify
+  if (!isAuthenticated) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center' }}>
+      <div style={{ padding: "20px", textAlign: "center" }}>
         <h1>SkellyTunes</h1>
-        <p>Redirecting to player...</p>
+        <p>You are not authenticated.</p>
+        <SpotifyAuthButton />
       </div>
     );
   }
 
-  // Si no está autenticado, mostrar el botón de conexión
+  // ✅ Si está autenticado Y pasó login → mostrar app
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ textAlign: 'center' }}>SkellyTunes</h1>
-      <div style={{ textAlign: 'center' }}>
-        <SpotifyAuthButton />
-      </div>
+    <div style={{ fontFamily: "Arial, sans-serif", paddingBottom: "100px" }}>
+      <Header activeTab={activeTab} onTabChange={setActiveTab} />
+      <main style={{ padding: "20px" }}>
+        {localError && (
+          <div
+            style={{ color: "red", textAlign: "center", marginBottom: "20px" }}
+          >
+            Error: {localError}
+            <button onClick={clearError} style={{ marginLeft: "10px" }}>
+              Clear
+            </button>
+          </div>
+        )}
+        <SearchResults
+          searchResults={searchResults}
+          isSearching={isSearching}
+          onPlayUri={handlePlayUri}
+        />
+      </main>
+      {deviceId && <SpotifyPlayer />}
     </div>
   );
-}
+};
+
+export default HomePage;

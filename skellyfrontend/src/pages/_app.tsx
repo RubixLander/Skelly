@@ -1,11 +1,13 @@
-// src/pages/_app.tsx
-import React from 'react';
-import { SpotifyProvider } from '../context/SpotifyContext';
+import type { AppProps } from "next/app";
+import { SpotifyProvider } from "../context/SpotifyContext";
+import { PlayerProvider } from "../context/PlayerContext";
 
-function MyApp({ Component, pageProps }: { Component: any; pageProps: any }) {
+function MyApp({ Component, pageProps }: AppProps) {
   return (
     <SpotifyProvider>
-      <Component {...pageProps} />
+      <PlayerProvider>
+        <Component {...pageProps} />
+      </PlayerProvider>
     </SpotifyProvider>
   );
 }

@@ -319,7 +319,7 @@ async seek(
       }
       throw new InternalServerErrorException('Search failed');
     }
-  }// adada
+  }
 
   @Get('artist/:id/top-tracks')
 async getArtistTopTracks(@Param('id') id: string, @Req() req: Request) {
@@ -367,7 +367,7 @@ async getPlaylistTracks(@Param('id') id: string, @Req() req: Request) {
     console.error('Error fetching playlist tracks:', error);
     throw new InternalServerErrorException('Failed to fetch playlist tracks');
   }
-} //adada
+}
 
 @Get('artist/:id/albums')
 async getArtistAlbums(@Param('id') id: string, @Req() req: Request) {

@@ -255,7 +255,7 @@ async seekTrack(positionMs: number, deviceId: string): Promise<void> {
     }
     throw new Error('Error desconocido al buscar posición');
   }
-} //adada
+}
 
 async getArtistTopTracks(artistId: string): Promise<any> {
   try {
@@ -306,7 +306,7 @@ async getPlaylistTracks(playlistId: string): Promise<any> {
     }
     throw new Error('Error desconocido al obtener tracks de la playlist');
   }
-} //adada
+}
 
 async getArtistAlbums(artistId: string): Promise<any> {
   try {

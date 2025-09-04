@@ -1,0 +1,115 @@
+/* Contenedor general de los resultados */
+.search-results-container {
+  padding: 20px;
+  color: white;
+}
+
+/* Grid que acomoda los ítems */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+/* Card base */
+.result-item {
+  background-color: #181818;
+  border-radius: 10px;
+  padding: 15px;
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.result-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Imagen */
+.item-image {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+/* Título y subtítulo */
+.item-title {
+  font-weight: bold;
+  font-size: 1rem;
+  margin: 8px 0 5px;
+  color: white;
+}
+
+.item-subtitle {
+  font-size: 0.85rem;
+  color: #b3b3b3;
+  margin: 3px 0;
+}
+
+/* Acciones (botones dentro de cada card) */
+.item-actions {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Botones */
+.play-button,
+.details-button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.play-button.enabled {
+  background-color: #1db954;
+  color: black;
+}
+
+.play-button.enabled:hover {
+  background-color: #1ed760;
+}
+
+.play-button.disabled {
+  background-color: #333;
+  color: #777;
+  cursor: not-allowed;
+}
+
+.details-button {
+  background-color: #282828;
+  color: white;
+}
+
+.details-button:hover {
+  background-color: #3e3e3e;
+}
+
+/* Botón volver */
+.back-button {
+  background: none;
+  border: none;
+  color: #1db954;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.back-button:hover {
+  text-decoration: underline;
+}
+
+/* Mensajes */
+.searching-message,
+.error-message,
+.no-tracks-message {
+  text-align: center;
+  font-size: 1rem;
+  color: #b3b3b3;
+  margin-top: 20px;
+}

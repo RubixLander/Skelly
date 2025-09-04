@@ -4,6 +4,7 @@ import apiClient from '../lib/api';
 
 // Definir tipos para el contexto
 export interface PlayerState {
+  context: any;
   isPlaying: boolean;
   position: number; // ms
   duration: number; // ms
@@ -27,7 +28,6 @@ export interface SpotifyContextType {
   playerState: PlayerState | null;
   setPlayerState: React.Dispatch<React.SetStateAction<PlayerState | null>>;
   playUri: (uri: string) => Promise<void>;
-  // Puedes agregar más funciones aquí: pause, next, previous, seek, etc.
 }
 
 const initialContextValue: SpotifyContextType = {
@@ -55,21 +55,44 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [playerState, setPlayerState] = useState<PlayerState | null>(null);
 
   // Refs para mantener referencias persistentes
-  const playerRef = useRef<any>(null); // Para el SDK de Spotify Web Playback
-  const intervalRef = useRef<NodeJS.Timeout | null>(null); // Para polling del estado del reproductor
+  const playerRef = useRef<any>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Verificar autenticación al montar el proveedor
+  // 🔥 NUEVO: Verificar autenticación y tokens en URL al montar
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = urlParams.get('access_token');
+    const refreshToken = urlParams.get('refresh_token');
+
+    // Si hay token en la URL, guardarlo y limpiar la URL
+    if (accessToken) {
+      console.log("Token detected in URL, saving...");
+      localStorage.setItem('access_token', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken);
+      }
+
+      // Limpiar el URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('access_token');
+      newUrl.searchParams.delete('refresh_token');
+      window.history.replaceState({}, document.title, newUrl);
+
+      // Marcar como autenticado
+      setIsAuthenticated(true);
+      setIsLoading(false);
+      return;
+    }
+
+    // Si no viene en URL, verificar con backend
     const checkAuth = async () => {
-      setIsLoading(true);
-      setError(null);
       try {
         const response = await apiClient.get('/spotify/check-auth');
         if (response.data.authenticated) {
           setIsAuthenticated(true);
-          // Actualizar tokens en localStorage si el backend los refrescó
+          // Actualizar tokens si el backend los refrescó
           localStorage.setItem('access_token', response.data.accessToken);
-          if(response.data.refreshToken) {
+          if (response.data.refreshToken) {
             localStorage.setItem('refresh_token', response.data.refreshToken);
           }
         } else {
@@ -97,23 +120,20 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     let player: any = null;
 
-    // Definir la función global requerida por el SDK *antes* de cargar el script
     window.onSpotifyWebPlaybackSDKReady = async () => {
-       console.log("Spotify SDK is ready");
-       initializePlayer();
+      console.log("Spotify SDK is ready");
+      initializePlayer();
     };
 
-    // Cargar el script del SDK de Spotify
     const script = document.createElement('script');
-    // CORRECCIÓN 1: Eliminar espacio extra al final de la URL
-    script.src = 'https://sdk.scdn.co/spotify-player.js'; // <-- Espacio eliminado
+    script.src = 'https://sdk.scdn.co/spotify-player.js'; // ✅ Corregido: espacio extra eliminado
     script.async = true;
     script.crossOrigin = 'anonymous';
-    
+
     script.onload = () => {
       console.log("Spotify SDK script loaded");
     };
-    
+
     script.onerror = () => {
       setError('Failed to load Spotify player script');
       setIsLoading(false);
@@ -121,7 +141,6 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     document.body.appendChild(script);
 
-    // Cleanup
     return () => {
       console.log("SpotifyProvider useEffect - Cleanup");
       if (playerRef.current) {
@@ -132,9 +151,9 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
         console.log("Clearing polling interval");
         clearInterval(intervalRef.current);
       }
-      // CORRECCIÓN 2: Asignar función vacía en lugar de undefined
-      if (typeof window !== 'undefined' && window.onSpotifyWebPlaybackSDKReady) {
-         window.onSpotifyWebPlaybackSDKReady = () => {}; // <-- Asignar función vacía
+      // ✅ Asignar función vacía, no undefined
+      if (typeof window !== 'undefined') {
+        window.onSpotifyWebPlaybackSDKReady = () => {};
       }
       if (document.body.contains(script)) {
         document.body.removeChild(script);
@@ -153,7 +172,7 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     playerRef.current = new (window as any).Spotify.Player({
       name: 'My Spotify Player',
-      getOAuthToken: (cb: (token: string) => void) => { // Asignar tipo explícito a cb
+      getOAuthToken: (cb: (token: string) => void) => {
         const token = localStorage.getItem('access_token');
         console.log("Getting OAuth token for SDK");
         if (token) {
@@ -170,7 +189,6 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
     playerRef.current.addListener('ready', ({ device_id }: { device_id: string }) => {
       console.log('Spotify Player Ready. Device ID:', device_id);
       setDeviceId(device_id);
-      // Iniciar sondeo del estado del reproductor
       startPlayerStatePolling(device_id);
       setIsLoading(false);
     });
@@ -184,7 +202,7 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     playerRef.current.addListener('player_state_changed', (state: any) => {
       console.log('Player State Changed (SDK Listener):', state);
-      updatePlayerState(state); // Ya manejado por el polling
+      updatePlayerState(state);
     });
 
     playerRef.current.addListener('authentication_error', ({ message }: { message: string }) => {
@@ -210,13 +228,13 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
     // Conectar el reproductor
     console.log("Connecting to Spotify Player...");
     playerRef.current.connect().then((success: boolean) => {
-       if(success) {
-          console.log("Successfully connected to Spotify Player");
-       } else {
-          console.error("Failed to connect to Spotify Player");
-          setError('Failed to connect to Spotify Player');
-          setIsLoading(false);
-       }
+      if (success) {
+        console.log("Successfully connected to Spotify Player");
+      } else {
+        console.error("Failed to connect to Spotify Player");
+        setError('Failed to connect to Spotify Player');
+        setIsLoading(false);
+      }
     }).catch((connectError: Error) => {
       console.error('Connection error:', connectError);
       setError(`Connection failed: ${connectError.message}`);
@@ -224,29 +242,25 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
     });
   };
 
-  // Sondeo del estado del reproductor (alternativa o complemento a player_state_changed)
+  // Sondeo del estado del reproductor
   const startPlayerStatePolling = (deviceId: string) => {
-    stopPlayerStatePolling(); // Limpiar intervalo anterior
-    // Polling más frecuente para barra de progreso suave
+    stopPlayerStatePolling();
     intervalRef.current = setInterval(async () => {
       try {
         const response = await apiClient.get('/spotify/current-track');
         updatePlayerState(response.data);
       } catch (err: any) {
-        // Manejo silencioso de errores comunes
         if (err.response?.status === 204) {
-          // No content - no hay pista activa
-          if (playerState !== null) { // Solo actualizar si había una pista antes
-             setPlayerState(null);
+          if (playerState !== null) {
+            setPlayerState(null);
           }
         } else if (err.response?.status === 401 || err.response?.status === 403) {
-          // Token expirado - debería manejarse en check-auth
           console.warn("Token might be expired, handled by check-auth");
         } else {
           console.error('Polling error (not 204/401/403):', err);
         }
       }
-    }, 500); // Cada 500ms
+    }, 500);
   };
 
   const stopPlayerStatePolling = () => {
@@ -256,23 +270,19 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  // Actualizar el estado del contexto desde el SDK
+  // Actualizar el estado del contexto
   const updatePlayerState = (state: any) => {
     if (!state || !state.item) {
-      if (playerState !== null) { // Solo actualizar si había una pista antes
-         setPlayerState(null);
+      if (playerState !== null) {
+        setPlayerState(null);
       }
       return;
     }
 
     const newPosition = state.progress_ms || 0;
     const newDuration = state.item.duration_ms || 0;
-    
-    // Lógica precisa para navegación
     const isSkippingNextAllowed = !(state.actions?.disallows?.skipping_next ?? false);
     const isSkippingPrevAllowed = !(state.actions?.disallows?.skipping_prev ?? false);
-    const canSkipNext = isSkippingNextAllowed;
-    const canSkipPrevious = isSkippingPrevAllowed;
 
     const newState: PlayerState = {
       isPlaying: state.is_playing,
@@ -281,16 +291,17 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
       trackName: state.item.name || 'Unknown Track',
       artistName: state.item.artists?.map((a: any) => a.name).join(', ') || 'Unknown Artist',
       albumImage: state.item.album?.images?.[0]?.url || 'https://via.placeholder.com/300x300?text=No+Image',
-      deviceId: deviceId, // Mantener el deviceId
+      deviceId: deviceId,
       contextUri: state.context?.uri || null,
-      canSkipNext: canSkipNext,
-      canSkipPrevious: canSkipPrevious,
+      canSkipNext: isSkippingNextAllowed,
+      canSkipPrevious: isSkippingPrevAllowed,
+      context: undefined
     };
-    
+
     setPlayerState(newState);
   };
 
-  // Función para reproducir un URI usando el deviceId del contexto
+  // Función para reproducir un URI
   const playUri = async (uri: string) => {
     if (!deviceId) {
       throw new Error('No Spotify device connected');
@@ -321,7 +332,7 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
 
-  // Valor que se proveerá al contexto
+  // Valor del contexto
   const contextValue: SpotifyContextType = {
     deviceId,
     setDeviceId,
@@ -333,7 +344,6 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
     playerState,
     setPlayerState,
     playUri,
-    // Aquí puedes añadir más funciones como pause, next, etc.
   };
 
   return (
@@ -342,3 +352,5 @@ export const SpotifyProvider: React.FC<{ children: ReactNode }> = ({ children })
     </SpotifyContext.Provider>
   );
 };
+
+export const useSpotify = () => useContext(SpotifyContext);
