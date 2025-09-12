@@ -1,4 +1,3 @@
-// src/pages/register.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -7,15 +6,20 @@ import { useRouter } from 'next/router';
 const RegisterPage = () => {
   const router = useRouter();
 
+  const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [emailConfirm, setEmailConfirm] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState('');
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!nickname.trim()) {
+      setError('El nombre de usuario es obligatorio');
+      return;
+    }
     if (email !== emailConfirm) {
       setError('Los correos no coinciden');
       return;
@@ -25,9 +29,35 @@ const RegisterPage = () => {
       return;
     }
 
-    setError('');
-    localStorage.setItem('appLoggedIn', 'true');
-    router.push('/');
+    try {
+      const response = await fetch('http://localhost:3001/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nickname,
+          display_email: email,
+          password,
+          custom_profile_image_url: null,
+          bio: null,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.message || 'Error al registrar usuario');
+        return;
+      }
+
+      // Registro exitoso
+      setError('');
+      localStorage.setItem('appLoggedIn', 'true');
+      router.push('/');
+    } catch (err) {
+      console.error(err);
+      setError('Error al conectar con el servidor');
+    }
   };
 
   const goToLogin = () => {
@@ -45,7 +75,7 @@ const RegisterPage = () => {
         overflow: 'hidden',
       }}
     >
-      {/* 🔥 Imagen de fondo como <img> con filtro */}
+      {/* Imagen de fondo */}
       <div
         style={{
           position: 'fixed',
@@ -64,12 +94,12 @@ const RegisterPage = () => {
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            filter: 'grayscale(1) brightness(0.4)', // 💀 Desaturado + oscuro
+            filter: 'grayscale(1) brightness(0.4)',
           }}
         />
       </div>
 
-      {/* Contenido centrado */}
+      {/* Formulario */}
       <div
         style={{
           height: '100%',
@@ -100,6 +130,14 @@ const RegisterPage = () => {
               gap: '12px',
             }}
           >
+            <input
+              type="text"
+              placeholder="Nombre de usuario"
+              required
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              style={inputStyle}
+            />
             <input
               type="email"
               placeholder="Correo electrónico"

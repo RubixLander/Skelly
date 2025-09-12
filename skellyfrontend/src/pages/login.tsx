@@ -1,16 +1,46 @@
-// src/pages/login.tsx
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 
 const LoginPage = () => {
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem("appLoggedIn", "true");
-    router.push('/');
+
+    try {
+      const response = await fetch('http://localhost:3001/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          display_email: email,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || 'Error al iniciar sesión');
+        return;
+      }
+
+      // Login exitoso
+      localStorage.setItem('appLoggedIn', 'true');
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setError('');
+      router.push('/');
+    } catch (err) {
+      console.error(err);
+      setError('Error al conectar con el servidor');
+    }
   };
 
   const goToRegister = () => {
@@ -28,7 +58,7 @@ const LoginPage = () => {
         overflow: 'hidden',
       }}
     >
-      {/* 🔥 Contenedor para imagen de fondo: ocupa TODA la pantalla */}
+      {/* 🔥 Imagen de fondo */}
       <div
         style={{
           position: 'fixed',
@@ -40,19 +70,18 @@ const LoginPage = () => {
           backgroundColor: 'black',
         }}
       >
-          <img
-            src="/SkellyInicioSesion.gif"
-            alt="Background"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover', // 👈 CAMBIA 'contain' por 'cover'
-            }}
-          />
-
+        <img
+          src="/SkellyInicioSesion.gif"
+          alt="Background"
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
       </div>
 
-      {/* ✅ Contenido centrado y sin modificar */}
+      {/* Formulario */}
       <div
         style={{
           height: '100%',
@@ -87,38 +116,28 @@ const LoginPage = () => {
               type="email"
               placeholder="Correo electrónico"
               required
-              style={{
-                padding: '12px',
-                borderRadius: '6px',
-                border: 'none',
-                fontSize: '15px',
-                outline: 'none',
-              }}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={inputStyle}
             />
             <input
               type="password"
               placeholder="Contraseña"
               required
-              style={{
-                padding: '12px',
-                borderRadius: '6px',
-                border: 'none',
-                fontSize: '15px',
-                outline: 'none',
-              }}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={inputStyle}
             />
+
+            {error && (
+              <div style={{ color: 'red', fontWeight: 'bold', marginTop: '8px' }}>
+                {error}
+              </div>
+            )}
+
             <button
               type="submit"
-              style={{
-                marginTop: '12px',
-                padding: '12px',
-                backgroundColor: '#1DB954',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-              }}
+              style={submitButtonStyle}
             >
               Iniciar sesión
             </button>
@@ -126,17 +145,7 @@ const LoginPage = () => {
 
           <button
             onClick={goToRegister}
-            style={{
-              marginTop: '16px',
-              padding: '12px',
-              backgroundColor: 'transparent',
-              color: '#fff',
-              border: '1px solid #fff',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              width: '100%',
-            }}
+            style={secondaryButtonStyle}
           >
             Crear cuenta
           </button>
@@ -144,6 +153,37 @@ const LoginPage = () => {
       </div>
     </div>
   );
+};
+
+const inputStyle = {
+  padding: '12px',
+  borderRadius: '6px',
+  border: 'none',
+  fontSize: '15px',
+  outline: 'none',
+};
+
+const submitButtonStyle = {
+  marginTop: '12px',
+  padding: '12px',
+  backgroundColor: '#1DB954',
+  color: 'white',
+  border: 'none',
+  borderRadius: '6px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+};
+
+const secondaryButtonStyle = {
+  marginTop: '16px',
+  padding: '12px',
+  backgroundColor: 'transparent',
+  color: '#fff',
+  border: '1px solid #fff',
+  borderRadius: '6px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  width: '100%',
 };
 
 export default LoginPage;
