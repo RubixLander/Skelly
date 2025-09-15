@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import { useUser } from '../context/UserContext'; // Asegúrate de importar el hook del contexto
 
 const LoginPage = () => {
+  const { setUser } = useUser(); // Usamos el hook del contexto
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -33,6 +35,7 @@ const LoginPage = () => {
       }
 
       // Login exitoso
+      setUser(data.user); // Guardamos el usuario en el contexto
       localStorage.setItem('appLoggedIn', 'true');
       localStorage.setItem('user', JSON.stringify(data.user));
       setError('');
@@ -135,18 +138,12 @@ const LoginPage = () => {
               </div>
             )}
 
-            <button
-              type="submit"
-              style={submitButtonStyle}
-            >
+            <button type="submit" style={submitButtonStyle}>
               Iniciar sesión
             </button>
           </form>
 
-          <button
-            onClick={goToRegister}
-            style={secondaryButtonStyle}
-          >
+          <button onClick={goToRegister} style={secondaryButtonStyle}>
             Crear cuenta
           </button>
         </div>
@@ -183,7 +180,6 @@ const secondaryButtonStyle = {
   borderRadius: '6px',
   fontWeight: 'bold',
   cursor: 'pointer',
-  width: '100%',
 };
 
 export default LoginPage;

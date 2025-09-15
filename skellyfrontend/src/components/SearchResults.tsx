@@ -1,6 +1,6 @@
 // src/components/SearchResults.tsx
 import React, { useState } from 'react';
-import { SpotifyTrack, SpotifyAlbum, SpotifyArtist, SpotifyPlaylist, SearchResult } from '../types/spotify-types';
+import { SpotifyAlbum, SpotifyArtist, SpotifyPlaylist, SearchResult } from '../types/spotify-types';
 import MusicItemDetails from './MusicItemDetails';
 import '../styles/searchResults.css';
 

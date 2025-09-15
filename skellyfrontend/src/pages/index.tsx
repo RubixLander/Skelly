@@ -14,7 +14,6 @@ const HomePage: React.FC = () => {
 
   const { isAuthenticated, isLoading, error: contextError, deviceId } =
     useContext(SpotifyContext);
-
   const [activeTab, setActiveTab] = useState("Canciones");
   const router = useRouter();
 
@@ -69,7 +68,7 @@ const HomePage: React.FC = () => {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
         <h1>SkellyTunes</h1>
-        <p>You are not authenticated.</p>
+        <p>You are not authenticated. In order to use SkellyTunes, you must link a Spotify account and log in.</p>
         <SpotifyAuthButton />
       </div>
     );

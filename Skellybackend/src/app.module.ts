@@ -5,6 +5,7 @@ import { DatabaseModule } from './database/database.module';
 import { SpotifyModule } from './spotify/spotify.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { UserFavoritesModule } from './user-favorites/user.favorites.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { AuthModule } from './auth/auth.module';
     SpotifyModule, // mantiene tu API de Spotify
     UsersModule,
     AuthModule,
+    UserFavoritesModule,
   ],
 })
 export class AppModule {}
