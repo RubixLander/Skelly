@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../lib/api';
 import { SpotifyAlbum, SpotifyArtist, SpotifyPlaylist } from '../types/spotify-types';
+import { useUser } from '../context/UserContext';
 import '../styles/cards.css';
 
 interface ItemDetailsProps {
@@ -12,6 +13,7 @@ interface ItemDetailsProps {
 }
 
 const MusicItemDetails: React.FC<ItemDetailsProps> = ({ item, itemType, onPlayUri, onBack }) => {
+  const { user } = useUser();
   const [details, setDetails] = useState<any>(null);
   const [albums, setAlbums] = useState<any[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
@@ -19,6 +21,10 @@ const MusicItemDetails: React.FC<ItemDetailsProps> = ({ item, itemType, onPlayUr
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tracks' | 'albums'>('tracks');
+
+  // favoritos
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [loadingFavorite, setLoadingFavorite] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -61,6 +67,88 @@ const MusicItemDetails: React.FC<ItemDetailsProps> = ({ item, itemType, onPlayUr
 
     fetchDetails();
   }, [item.id, itemType]);
+
+  // cargar favoritos del usuario
+  const loadFavorites = async () => {
+    if (user) {
+      try {
+        const response = await fetch(`http://localhost:3001/user-favorites/${user.user_id}`);
+        const data = await response.json();
+        const userFavorites = new Set(data.map((item: { spotify_uri: string }) => item.spotify_uri));
+        setFavorites(userFavorites);
+      } catch (error) {
+        console.error("Error al cargar los favoritos:", error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadFavorites();
+  }, [user]);
+
+  const handleFavoriteToggle = async (
+    contentType: "track" | "album" | "artist" | "playlist",
+    spotifyUri: string,
+    name: string,
+    imageUrl: string
+  ) => {
+    if (!user) {
+      alert("Debes iniciar sesión para guardar favoritos.");
+      return;
+    }
+
+    setLoadingFavorite(spotifyUri);
+
+    try {
+      const isFavorite = favorites.has(spotifyUri);
+
+      if (isFavorite) {
+        const response = await fetch(
+          `http://localhost:3001/user-favorites/${user.user_id}?spotify_uri=${spotifyUri}`,
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+
+        if (response.ok) {
+          setFavorites((prevFavorites) => {
+            const newFavorites = new Set(prevFavorites);
+            newFavorites.delete(spotifyUri);
+            return newFavorites;
+          });
+          alert("Contenido eliminado de favoritos");
+        } else {
+          const data = await response.json();
+          alert(data.message || "Error al eliminar de favoritos");
+        }
+      } else {
+        const response = await fetch("http://localhost:3001/user-favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: user.user_id,
+            content_type: contentType,
+            spotify_uri: spotifyUri,
+            name,
+            image_url: imageUrl,
+          }),
+        });
+
+        if (response.ok) {
+          setFavorites((prevFavorites) => new Set(prevFavorites).add(spotifyUri));
+          alert("Contenido agregado a favoritos");
+        } else {
+          const data = await response.json();
+          alert(data.message || "Error al guardar en favoritos");
+        }
+      }
+    } catch (error) {
+      alert("Error de conexión al guardar o eliminar favorito");
+    } finally {
+      setLoadingFavorite(null);
+    }
+  };
 
   const fetchAlbumTracks = async (albumId: string) => {
     try {
@@ -127,11 +215,11 @@ const MusicItemDetails: React.FC<ItemDetailsProps> = ({ item, itemType, onPlayUr
     return (
       <div className="results-grid">
         {tracks.map((track) => {
-          // 👇 FIX: en vista de álbum, usar la imagen del álbum (item), no la del track
           const imageUrl =
             itemType === 'album'
               ? getImageUrl(item, 'album')
               : getImageUrl(track, 'track');
+          const isFavorite = favorites.has(track.uri!);
 
           return (
             <div key={track.id} className="result-item">
@@ -146,6 +234,13 @@ const MusicItemDetails: React.FC<ItemDetailsProps> = ({ item, itemType, onPlayUr
                 >
                   Reproducir
                 </button>
+                <button
+                  className={`favorite-button ${isFavorite ? "favorited" : ""}`}
+                  disabled={loadingFavorite === track.uri}
+                  onClick={() => handleFavoriteToggle("track", track.uri!, track.name, imageUrl)}
+                >
+                  {loadingFavorite === track.uri ? "Guardando..." : isFavorite ? "❤️" : "🤍"}
+                </button>
                 <span className="item-subtitle">{formatDuration(track.duration_ms)}</span>
               </div>
             </div>
@@ -155,53 +250,52 @@ const MusicItemDetails: React.FC<ItemDetailsProps> = ({ item, itemType, onPlayUr
     );
   };
 
-const renderAlbums = () => {
-  if (albums.length === 0) return null;
+  const renderAlbums = () => {
+    if (albums.length === 0) return null;
 
-  const sortedAlbums = [...albums].sort(
-    (a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
-  );
+    const sortedAlbums = [...albums].sort(
+      (a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime()
+    );
 
-  return (
-    <div>
-      <h2 style={{ marginBottom: '20px' }}>Álbumes</h2>
-      <div className="results-grid">
-        {sortedAlbums.map((album) => (
-          <div
-            key={album.id}
-            className="result-item"
-            style={{ cursor: 'pointer' }}   // 👈 ahora todo el card es clickeable
-            onClick={async () => {
-              setSelectedAlbum(album);
-              await fetchAlbumTracks(album.id);
-            }}
-          >
-            <img src={getImageUrl(album, 'album')} alt={album.name} className="item-image" />
-            <p className="item-title">{album.name}</p>
-            <p className="item-subtitle">{getArtistNames(album)}</p>
-            <p className="item-subtitle">
-              {album.release_date ? new Date(album.release_date).getFullYear() : ''}
-            </p>
-            {/* Botón para reproducir el álbum completo */}
-            <div className="item-actions">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevenir que se active el onClick del div
-                  album.uri && onPlayUri(album.uri);
-                }}
-                disabled={!album.uri}
-                className={album.uri ? 'play-button enabled' : 'play-button disabled'}
-                style={{ marginTop: '8px' }}
-              >
-                Reproducir Álbum
-              </button>
+    return (
+      <div>
+        <h2 style={{ marginBottom: '20px' }}>Álbumes</h2>
+        <div className="results-grid">
+          {sortedAlbums.map((album) => (
+            <div
+              key={album.id}
+              className="result-item"
+              style={{ cursor: 'pointer' }}
+              onClick={async () => {
+                setSelectedAlbum(album);
+                await fetchAlbumTracks(album.id);
+              }}
+            >
+              <img src={getImageUrl(album, 'album')} alt={album.name} className="item-image" />
+              <p className="item-title">{album.name}</p>
+              <p className="item-subtitle">{getArtistNames(album)}</p>
+              <p className="item-subtitle">
+                {album.release_date ? new Date(album.release_date).getFullYear() : ''}
+              </p>
+              <div className="item-actions">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    album.uri && onPlayUri(album.uri);
+                  }}
+                  disabled={!album.uri}
+                  className={album.uri ? 'play-button enabled' : 'play-button disabled'}
+                  style={{ marginTop: '8px' }}
+                >
+                  Reproducir Álbum
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const renderSelectedAlbumTracks = () => {
     if (albumTracks.length === 0) {
@@ -210,27 +304,35 @@ const renderAlbums = () => {
 
     return (
       <div className="results-grid">
-        {albumTracks.map((track) => (
-          <div key={track.id} className="result-item">
-            <img
-              src={getImageUrl(selectedAlbum, 'album')}
-              alt={track.name}
-              className="item-image"
-            />
-            <p className="item-title">{track.name}</p>
-            <p className="item-subtitle">{getArtistNames(track)}</p>
-            <div className="item-actions">
-              <button
-                onClick={() => track.uri && onPlayUri(track.uri)}
-                disabled={!track.uri}
-                className={track.uri ? 'play-button enabled' : 'play-button disabled'}
-              >
-                Reproducir
-              </button>
-              <span className="item-subtitle">{formatDuration(track.duration_ms)}</span>
+        {albumTracks.map((track) => {
+          const imageUrl = getImageUrl(selectedAlbum, 'album');
+          const isFavorite = favorites.has(track.uri!);
+
+          return (
+            <div key={track.id} className="result-item">
+              <img src={imageUrl} alt={track.name} className="item-image" />
+              <p className="item-title">{track.name}</p>
+              <p className="item-subtitle">{getArtistNames(track)}</p>
+              <div className="item-actions">
+                <button
+                  onClick={() => track.uri && onPlayUri(track.uri)}
+                  disabled={!track.uri}
+                  className={track.uri ? 'play-button enabled' : 'play-button disabled'}
+                >
+                  Reproducir
+                </button>
+                <button
+                  className={`favorite-button ${isFavorite ? "favorited" : ""}`}
+                  disabled={loadingFavorite === track.uri}
+                  onClick={() => handleFavoriteToggle("track", track.uri!, track.name, imageUrl)}
+                >
+                  {loadingFavorite === track.uri ? "Guardando..." : isFavorite ? "❤️" : "🤍"}
+                </button>
+                <span className="item-subtitle">{formatDuration(track.duration_ms)}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -274,7 +376,6 @@ const renderAlbums = () => {
               <p className="item-subtitle">
                 {getArtistNames(item)} • {new Date((item as SpotifyAlbum).release_date).getFullYear()}
               </p>
-              {/* Botón para reproducir el álbum completo */}
               <button
                 onClick={() => item.uri && onPlayUri(item.uri)}
                 disabled={!item.uri}
@@ -288,7 +389,6 @@ const renderAlbums = () => {
           {itemType === 'playlist' && (
             <>
               <p className="item-subtitle">Por {(item as SpotifyPlaylist).owner?.display_name || 'Desconocido'}</p>
-              {/* Botón para reproducir la playlist completa */}
               <button
                 onClick={() => item.uri && onPlayUri(item.uri)}
                 disabled={!item.uri}

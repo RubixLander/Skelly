@@ -384,4 +384,50 @@ async getArtistAlbums(@Param('id') id: string, @Req() req: Request) {
     throw new InternalServerErrorException('Failed to fetch artist albums');
   }
 }
+
+@Get('artist/:id')
+async getArtist(@Param('id') id: string, @Req() req: Request) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) throw new BadRequestException('Access token required');
+
+  this.spotifyService.setAccessToken(token);
+
+  try {
+    return await this.spotifyService.getArtistDetails(id);
+  } catch (error) {
+    console.error('Error fetching artist details:', error);
+    throw new InternalServerErrorException('Failed to fetch artist details');
+  }
+}
+
+@Get('album/:id')
+async getAlbum(@Param('id') id: string, @Req() req: Request) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) throw new BadRequestException('Access token required');
+
+  this.spotifyService.setAccessToken(token);
+
+  try {
+    return await this.spotifyService.getAlbumDetails(id);
+  } catch (error) {
+    console.error('Error fetching album details:', error);
+    throw new InternalServerErrorException('Failed to fetch album details');
+  }
+}
+
+@Get('playlist/:id')
+async getPlaylist(@Param('id') id: string, @Req() req: Request) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) throw new BadRequestException('Access token required');
+
+  this.spotifyService.setAccessToken(token);
+
+  try {
+    return await this.spotifyService.getPlaylistDetails(id);
+  } catch (error) {
+    console.error('Error fetching playlist details:', error);
+    throw new InternalServerErrorException('Failed to fetch playlist details');
+  }
+}
+
 }

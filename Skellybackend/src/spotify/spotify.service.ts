@@ -1,11 +1,13 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { URLSearchParams } from 'url';
 import { PlayDto } from './dto/play.dto';
+import axios from 'axios';
 
 @Injectable()
 export class SpotifyService {
+  baseUrl: any;
   private accessToken: string = '';
   private refreshToken: string = '';
   spotifyService: any;
@@ -324,4 +326,66 @@ async getArtistAlbums(artistId: string): Promise<any> {
     throw new Error('Error desconocido al obtener álbumes del artista');
   }
 }
+
+  private async getHeaders() {
+    // 👇 aquí usas tu lógica de obtener/renovar el token de Spotify
+    const token = process.env.SPOTIFY_ACCESS_TOKEN;
+    if (!token) throw new HttpException("Spotify token not set", 500);
+
+    return {
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
+  async getArtistDetails(artistId: string): Promise<any> {
+  try {
+    const response = await firstValueFrom(
+      this.httpService.get(
+        `https://api.spotify.com/v1/artists/${artistId}`,
+        { headers: this.getAuthHeader() }
+      )
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error al obtener detalles del artista: ${error.message}`);
+    }
+    throw new Error('Error desconocido al obtener detalles del artista');
+  }
+}
+
+async getAlbumDetails(albumId: string): Promise<any> {
+  try {
+    const response = await firstValueFrom(
+      this.httpService.get(
+        `https://api.spotify.com/v1/albums/${albumId}`,
+        { headers: this.getAuthHeader() }
+      )
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error al obtener detalles del álbum: ${error.message}`);
+    }
+    throw new Error('Error desconocido al obtener detalles del álbum');
+  }
+}
+
+async getPlaylistDetails(playlistId: string): Promise<any> {
+  try {
+    const response = await firstValueFrom(
+      this.httpService.get(
+        `https://api.spotify.com/v1/playlists/${playlistId}`,
+        { headers: this.getAuthHeader() }
+      )
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      throw new Error(`Error al obtener detalles de la playlist: ${error.message}`);
+    }
+    throw new Error('Error desconocido al obtener detalles de la playlist');
+  }
+}
+
 }

@@ -6,6 +6,9 @@ import { SpotifyModule } from './spotify/spotify.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { UserFavoritesModule } from './user-favorites/user.favorites.module';
+import { CommentsModule } from './comments/comments.module';
+import { SearchModule } from './search/search.module';
+import { UsersDetailsModule } from './users-detail/users-details.module';
 
 @Module({
   imports: [
@@ -15,6 +18,9 @@ import { UserFavoritesModule } from './user-favorites/user.favorites.module';
     UsersModule,
     AuthModule,
     UserFavoritesModule,
+    CommentsModule,
+    SearchModule,
+    UsersDetailsModule,
   ],
 })
 export class AppModule {}

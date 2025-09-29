@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
+import { useUser } from '../context/UserContext'; // ✅ Importa el contexto
 
 const RegisterPage = () => {
   const router = useRouter();
+  const { setUser } = useUser(); // ✅ Obtén setUser del contexto
 
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
@@ -50,9 +52,24 @@ const RegisterPage = () => {
         return;
       }
 
-      // Registro exitoso
-      setError('');
+      // ✅ Registro exitoso: extrae datos, guarda en contexto y localStorage
+      const registeredUser = await response.json();
+
+      const userData = {
+        user_id: registeredUser.user_id,
+        display_email: registeredUser.display_email,
+        nickname: registeredUser.nickname,
+        custom_profile_image_url: registeredUser.custom_profile_image_url || null,
+        bio: registeredUser.bio || null,
+        accessToken: registeredUser.accessToken || undefined,
+      };
+
+      setUser(userData);
+
+      localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('appLoggedIn', 'true');
+
+      setError('');
       router.push('/');
     } catch (err) {
       console.error(err);

@@ -1,0 +1,240 @@
+.comment-section {
+  padding: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  font-family: 'Arial', sans-serif;
+  color: white;
+}
+
+/* Result item */
+.comment-section .result-item {
+  background-color: #181818;
+  border-radius: 12px;
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.comment-section .item-image {
+  width: 160px;
+  height: 160px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin-right: 1.5rem;
+}
+
+.comment-section .item-title {
+  font-weight: bold;
+  font-size: 1.4rem;
+  margin: 8px 0 5px;
+  color: white;
+}
+
+.comment-section .item-subtitle {
+  font-size: 1rem;
+  color: #b3b3b3;
+  margin: 3px 0;
+}
+
+/* Lista de comentarios */
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  padding-bottom: 220px; /* espacio para el reproductor y caja */
+}
+
+/* Comentarios */
+.comment-card {
+  display: flex;
+  background-color: #282828;
+  color: white;
+  padding: 1.2rem;
+  border-radius: 12px;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.comment-card.album-playlist {
+  background-color: #333333;
+  border: 2px solid #444444;
+}
+
+.comment-card.reply {
+  background-color: #333;
+  border-left: 3px solid #1db954;
+}
+
+/* Avatar */
+.avatar {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.comment-content {
+  flex: 1;
+}
+
+.nickname {
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+/* Botones de acción en comentarios */
+.comment-content button {
+  margin-top: 0.5rem;
+  background: none;
+  border: none;
+  color: #1db954;
+  cursor: pointer;
+  padding: 0;
+}
+
+.comment-content button:hover {
+  text-decoration: underline;
+}
+
+.replies {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Mensaje si no hay comentarios */
+.no-comments {
+  text-align: center;
+  font-size: 1rem;
+  color: #b3b3b3;
+  padding: 1rem;
+  background-color: #202020;
+  border-radius: 8px;
+}
+
+/* Botón volver */
+.back-button {
+  background: #1db954;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 25px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background 0.2s ease-in-out;
+}
+
+.back-button:hover {
+  background: #17a74a;
+}
+
+/* Caja de comentarios */
+.new-comment-form {
+  position: fixed;
+  bottom: 90px; /* 🔹 queda encima del reproductor */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 1100px;
+  background: #000000;
+  padding: 1rem;
+  box-shadow: 0 -2px 6px rgba(116, 113, 113, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 2000; /* más alto que el player */
+  border-radius: 12px;
+  box-sizing: border-box;
+  transition: bottom 0.3s ease;
+}
+
+.new-comment-form textarea {
+  width: 100%;
+  min-height: 60px;
+  resize: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: none;
+  background: #202020;
+  color: #fff;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.new-comment-form textarea:focus {
+  border: 1px solid #1db954; /* verde al enfocar */
+  background: #1f1f1f;
+  outline: none;
+}
+
+.new-comment-form button {
+  align-self: flex-end;
+  background: #1db954;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.new-comment-form button:disabled {
+  background: #444;
+  cursor: not-allowed;
+}
+
+/* Bloque de "Respondiendo a" */
+.replying-to {
+  background: #000000;          /* fondo más claro */
+  padding: 0.9rem 1rem;
+  border-radius: 8px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff6f6;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.replying-to button {
+  background: transparent;
+  border: none;
+  color: #e63946;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.replying-to button:hover {
+  text-decoration: underline;
+}
+
+/* Botón ver respuestas estilo Instagram */
+.toggle-replies-btn {
+  margin-left: 1rem;
+  font-size: 0.9rem;
+  color: #8e8e8e;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.toggle-replies-btn:hover {
+  text-decoration: underline;
+}
+
+/* Ajuste dinámico con textarea activo */
+body.comment-active .spotify-player {
+  bottom: 120px; /* 🔹 reproductor se levanta */
+  transition: bottom 0.3s ease;
+}
+
+body.comment-active .new-comment-form {
+  bottom: 180px; /* 🔹 la caja sube un poco más */
+}

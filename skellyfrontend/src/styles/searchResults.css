@@ -174,3 +174,46 @@
   background-color: #ccc;
   cursor: not-allowed;
 }
+
+.favorite-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.3em;
+  margin-left: 8px;
+  color: #e0245e; /* rojo corazón */
+  transition: transform 0.2s;
+}
+
+.favorite-button:hover {
+  transform: scale(1.2);
+}
+
+.favorite-message {
+  margin: 10px 0;
+  color: green;
+  font-weight: bold;
+}
+
+/* 🎯 Encapsular comentarios */
+.comment-section .no-comments {
+  padding: 1rem;
+  background-color: #2e2e2e;
+  color: #ccc;
+  border-radius: 6px;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.comment-section .comment-button {
+  background: none;
+  border: none;
+  color: #b3b3b3;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.comment-section .comment-button:hover {
+  color: #1db954;
+}

@@ -50,6 +50,7 @@ export interface SpotifyTrack {
 }
 
 export interface SpotifyAlbum {
+  tracks: any;
   id: string | null;
   uri: string;
   type: 'album';
@@ -84,6 +85,7 @@ export interface SpotifyPlaylist {
     id: string;
   };
   tracks: {
+    items: any;
     total: number;
   };
   external_urls: Record<string, string>;
@@ -94,6 +96,7 @@ export type SpotifyItem = SpotifyTrack | SpotifyAlbum | SpotifyArtist | SpotifyP
 
 // Tipo para los resultados de búsqueda
 export interface SearchResult {
+  users: any;
   tracks: SpotifyTrack[];
   albums: SpotifyAlbum[];
   artists: SpotifyArtist[];

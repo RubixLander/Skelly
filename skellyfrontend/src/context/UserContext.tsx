@@ -2,10 +2,12 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 
 // Define el tipo de datos del usuario
 interface User {
+  accessToken: any;
   user_id: string;
   display_email: string;
   nickname: string;
-  // Agrega otros campos que necesites
+  bio?: string | null; // ✅ añadido
+  custom_profile_image_url?: string | null; // ✅ añadido
 }
 
 interface UserContextType {

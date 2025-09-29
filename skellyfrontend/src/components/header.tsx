@@ -1,29 +1,81 @@
 // src/components/Header.tsx
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import "../styles/header.css";
 import SearchBar from "./SearchBar";
 import { usePlayer } from "../context/PlayerContext";
+import { useRouter } from "next/router";
+import { useSearchContext } from "../context/SearchContext";
+import { useUser } from "../context/UserContext";
 
 interface HeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  showTabs?: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
-  const tabs = ["Tu biblioteca", "Grupos", "Siguiendo", "Ajustes"];
+const Header: React.FC<HeaderProps> = ({
+  activeTab,
+  onTabChange,
+  showTabs = true,
+}) => {
+  const tabs = ["Tu biblioteca", "Grupos", "Siguiendo", "Tu perfil"];
   const { handleSearch } = usePlayer();
+  const router = useRouter();
+  const { searchUsers, clearSearchResults } = useSearchContext();
+  const { user } = useUser();
 
-  const profileImage = null; // Simulación de imagen de perfil
-
-  // ✅ 0.01% shiny — OJO: la ruta NO lleva /public
   const logoSrc = useMemo(
     () => (Math.random() < 0.01 ? "/shinylogo.gif" : "/logo.gif"),
     []
   );
 
+  useEffect(() => {
+    if (router.pathname === "/biblioteca") {
+      onTabChange("Tu biblioteca");
+    }
+    if (router.pathname === "/profiles") {
+      onTabChange("Tu perfil");
+    }
+  }, [router.pathname, onTabChange]);
+
+  const goToBiblioteca = () => {
+    onTabChange("Tu biblioteca");
+    clearSearchResults();
+    router.push("/biblioteca");
+  };
+
+  const goToProfile = () => {
+    onTabChange("Tu perfil");
+    clearSearchResults();
+    router.push("/profiles");
+  };
+
+  // 🔎 Buscar en Spotify y en backend (usuarios)
+  const onSearch = (query: string) => {
+    if (!query.trim()) return;
+    handleSearch(query);   // Spotify
+    searchUsers(query);    // Backend usuarios
+    router.push("/");      // Redirigir a Home para mostrar resultados
+  };
+
+  // Placeholder de avatar
+  const avatarPlaceholderStyle: React.CSSProperties = {
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    backgroundColor: "#444",
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "20px",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+    marginLeft: "10px",
+    flexShrink: 0,
+  };
+
   return (
     <header className="header-container">
-      {/* Logo + Texto */}
       <div className="header-logo">
         <img
           src={logoSrc}
@@ -33,26 +85,60 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
         <span className="header-title">SkellyTunes</span>
       </div>
 
-      {/* Barra de búsqueda */}
-      <SearchBar onSearch={handleSearch} />
+      <SearchBar onSearch={onSearch} />
 
-      {/* Tabs */}
-      <nav className="header-tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            className={`tab-button ${activeTab === tab ? "active" : "inactive"}`}
-            onClick={() => onTabChange(tab)}
-          >
-            {tab}
-          </button>
-        ))}
-      </nav>
+      {showTabs && (
+        <nav className="header-tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab}
+              className={`tab-button ${activeTab === tab ? "active" : "inactive"}`}
+              onClick={() => {
+                if (tab === "Tu biblioteca") {
+                  goToBiblioteca();
+                } else if (tab === "Tu perfil") {
+                  goToProfile();
+                } else {
+                  onTabChange(tab);
+                }
+              }}
+              style={{
+                backgroundColor: activeTab === tab ? "#1DB954" : "#333",
+              }}
+            >
+              {tab}
+            </button>
+          ))}
+        </nav>
+      )}
 
-      {/* Usuario */}
-      <div className="header-user">
-        {profileImage ? <img src={profileImage} alt="Perfil" /> : "👤"}
-      </div>
+        <div
+          className="header-user"
+          onClick={goToProfile}
+          style={{ cursor: "pointer" }}
+          title="Ir a perfil"
+        >
+          {user?.custom_profile_image_url ? (
+            <div className="avatar-container">
+              <img
+                src={user.custom_profile_image_url}
+                alt="Perfil"
+                className="avatar-image"
+                draggable={false}
+              />
+            </div>
+          ) : (
+            <div className="avatar-container">
+              <img
+                src="/profile.png"
+                alt="Perfil"
+                className="avatar-image"
+                draggable={false}
+              />
+            </div>
+          )}
+        </div>
+
     </header>
   );
 };

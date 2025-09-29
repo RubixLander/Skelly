@@ -127,18 +127,21 @@ const SpotifyPlayer: React.FC = () => {
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      backgroundColor: '#282828',
-      color: 'white',
-      padding: '10px 15px',
-      borderTop: '1px solid #404040',
-      zIndex: 1000,
-      boxSizing: 'border-box'
-    }}>
+    <div 
+      className="spotify-player"
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#282828',
+        color: 'white',
+        padding: '10px 15px',
+        borderTop: '1px solid #404040',
+        zIndex: 1000,
+        boxSizing: 'border-box'
+      }}
+    >
       {displayError && (
         <div style={{ color: 'red', marginBottom: '8px', textAlign: 'center' }}>
           <small>Error: {displayError}</small>
@@ -316,7 +319,7 @@ const SpotifyPlayer: React.FC = () => {
           </div>
         </div>
 
-        {/* Columna derecha (simétrica, reservada para volumen u opciones futuras) */}
+        {/* Columna derecha (reservada para volumen u opciones futuras) */}
         <div style={{
           flex: 1,
           minWidth: '150px',

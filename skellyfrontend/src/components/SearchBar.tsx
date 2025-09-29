@@ -1,4 +1,3 @@
-// src/components/SearchBar.tsx
 import React, { useState } from 'react';
 
 interface SearchBarProps {
@@ -24,7 +23,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
         type="text"
         value={searchQuery}
         onChange={handleInputChange}
-        placeholder="Buscar canciones, álbumes, artistas, grupos o playlists!"
+        placeholder="Buscar"
         className="search-input"
         onKeyDown={(e) => {
           if (e.key === 'Enter') {

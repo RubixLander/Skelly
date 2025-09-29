@@ -39,4 +39,13 @@ export class UserFavoritesService {
     const result = await this.pool.query(query, [user_id]);
     return result.rows;
   }
+  // Método para eliminar un favorito
+  async removeFavorite(user_id: string, spotify_uri: string): Promise<number> {
+    const removeQuery = `
+      DELETE FROM user_favorites 
+      WHERE user_id = $1 AND spotify_uri = $2
+    `;
+    const result = await this.pool.query(removeQuery, [user_id, spotify_uri]);
+    return result.rowCount ?? 0; // ← cuántos eliminó
+  }
 }
