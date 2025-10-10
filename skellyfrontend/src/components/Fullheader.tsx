@@ -34,8 +34,6 @@ const FullHeader: React.FC<FullHeaderProps> = ({ children, hideTabs = false }) =
   if (isLoading) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
-        <h1>SkellyTunes</h1>
-        <p>Checking authentication and initializing player...</p>
       </div>
     );
   }
@@ -116,12 +114,15 @@ const FullHeader: React.FC<FullHeaderProps> = ({ children, hideTabs = false }) =
           </div>
         )}
 
-        <SearchResults
-          searchResults={combinedResults}
-          isSearching={isAnySearching}
-          onPlayUri={handlePlayUri}
-          showTabs={!hideTabs}
-        />
+{!["/comunidades", "/biblioteca", "/seguidos", "/profiles"].includes(router.pathname) && (
+  <SearchResults
+    searchResults={combinedResults}
+    isSearching={isAnySearching}
+    onPlayUri={handlePlayUri}
+    showTabs={!hideTabs}
+  />
+)}
+
 
         {children}
       </main>

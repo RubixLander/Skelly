@@ -9,18 +9,20 @@ import { UserFavoritesModule } from './user-favorites/user.favorites.module';
 import { CommentsModule } from './comments/comments.module';
 import { SearchModule } from './search/search.module';
 import { UsersDetailsModule } from './users-detail/users-details.module';
+import { GroupsModule } from './groups/groups.module'; // 👈 AÑADIR ESTE IMPORT
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
-    SpotifyModule, // mantiene tu API de Spotify
+    SpotifyModule,
     UsersModule,
     AuthModule,
     UserFavoritesModule,
     CommentsModule,
     SearchModule,
     UsersDetailsModule,
+    GroupsModule, // 👈 AÑADIR AQUÍ TAMBIÉN
   ],
 })
 export class AppModule {}

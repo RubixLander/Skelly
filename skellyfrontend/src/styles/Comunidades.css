@@ -1,0 +1,145 @@
+/* Contenedor general */
+.comunidades-container {
+  background-color: #f7f7f7;
+  min-height: 100vh;
+  padding: 2rem;
+  color: #111;
+  font-family: 'Inter', sans-serif;
+  margin-top: -120px;
+}
+
+/* Título */
+.comunidades-container h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+}
+
+/* Tabs */
+.comunidades-tabs {
+  display: flex;
+  justify-content: start;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 2rem;
+}
+
+.comunidades-tab {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  padding: 10px 0;
+  background: #fff;
+  color: #333;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 6px 6px 0 0;
+}
+
+.comunidades-tab.active {
+  background: #1bc85a;
+  color: white;
+  font-weight: bold;
+}
+
+/* Cards */
+.comunidades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.comunidades-card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.comunidades-card:hover {
+  transform: translateY(-3px);
+}
+
+.comunidades-card img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 0.8rem;
+}
+
+.comunidades-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 0.4rem;
+}
+
+.comunidades-card p {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+/* Botones */
+.comunidades-card button {
+  background-color: #1bc85a;
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.comunidades-card button:hover {
+  background-color: #17a44d;
+}
+
+.comunidades-card button.leave {
+  background-color: #e23b3b;
+}
+
+.comunidades-card button.leave:hover {
+  background-color: #c32c2c;
+}
+
+/* Formularios */
+.comunidades-form input,
+.comunidades-form textarea {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.comunidades-form button {
+  background: #1bc85a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.comunidades-form button:hover {
+  background: #17a44d;
+}
+
+.comunidades-form .secondary {
+  background: #ddd;
+  color: #333;
+}
+
+.comunidades-form .secondary:hover {
+  background: #bbb;
+}

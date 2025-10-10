@@ -18,7 +18,9 @@ const Header: React.FC<HeaderProps> = ({
   onTabChange,
   showTabs = true,
 }) => {
-  const tabs = ["Tu biblioteca", "Grupos", "Siguiendo", "Tu perfil"];
+  // ✅ Orden actualizado
+  const tabs = ["Comunidades", "Tu biblioteca", "Siguiendo", "Tu perfil"];
+  
   const { handleSearch } = usePlayer();
   const router = useRouter();
   const { searchUsers, clearSearchResults } = useSearchContext();
@@ -30,18 +32,36 @@ const Header: React.FC<HeaderProps> = ({
   );
 
   useEffect(() => {
+    if (router.pathname === "/comunidades") {
+      onTabChange("Comunidades");
+    }
     if (router.pathname === "/biblioteca") {
       onTabChange("Tu biblioteca");
+    }
+    if (router.pathname === "/seguidos") {
+      onTabChange("Siguiendo");
     }
     if (router.pathname === "/profiles") {
       onTabChange("Tu perfil");
     }
   }, [router.pathname, onTabChange]);
 
+  const goToComunidades = () => {
+    onTabChange("Comunidades");
+    clearSearchResults();
+    router.push("/comunidades");
+  };
+
   const goToBiblioteca = () => {
     onTabChange("Tu biblioteca");
     clearSearchResults();
     router.push("/biblioteca");
+  };
+
+  const goToSiguiendo = () => {
+    onTabChange("Siguiendo");
+    clearSearchResults();
+    router.push("/seguidos");
   };
 
   const goToProfile = () => {
@@ -50,15 +70,13 @@ const Header: React.FC<HeaderProps> = ({
     router.push("/profiles");
   };
 
-  // 🔎 Buscar en Spotify y en backend (usuarios)
   const onSearch = (query: string) => {
     if (!query.trim()) return;
-    handleSearch(query);   // Spotify
-    searchUsers(query);    // Backend usuarios
-    router.push("/");      // Redirigir a Home para mostrar resultados
+    handleSearch(query); // Spotify
+    searchUsers(query);  // Backend usuarios
+    router.push("/");    // Redirigir a Home
   };
 
-  // Placeholder de avatar
   const avatarPlaceholderStyle: React.CSSProperties = {
     width: "40px",
     height: "40px",
@@ -94,8 +112,12 @@ const Header: React.FC<HeaderProps> = ({
               key={tab}
               className={`tab-button ${activeTab === tab ? "active" : "inactive"}`}
               onClick={() => {
-                if (tab === "Tu biblioteca") {
+                if (tab === "Comunidades") {
+                  goToComunidades();
+                } else if (tab === "Tu biblioteca") {
                   goToBiblioteca();
+                } else if (tab === "Siguiendo") {
+                  goToSiguiendo();
                 } else if (tab === "Tu perfil") {
                   goToProfile();
                 } else {
@@ -112,33 +134,32 @@ const Header: React.FC<HeaderProps> = ({
         </nav>
       )}
 
-        <div
-          className="header-user"
-          onClick={goToProfile}
-          style={{ cursor: "pointer" }}
-          title="Ir a perfil"
-        >
-          {user?.custom_profile_image_url ? (
-            <div className="avatar-container">
-              <img
-                src={user.custom_profile_image_url}
-                alt="Perfil"
-                className="avatar-image"
-                draggable={false}
-              />
-            </div>
-          ) : (
-            <div className="avatar-container">
-              <img
-                src="/profile.png"
-                alt="Perfil"
-                className="avatar-image"
-                draggable={false}
-              />
-            </div>
-          )}
-        </div>
-
+      <div
+        className="header-user"
+        onClick={goToProfile}
+        style={{ cursor: "pointer" }}
+        title="Ir a perfil"
+      >
+        {user?.custom_profile_image_url ? (
+          <div className="avatar-container">
+            <img
+              src={user.custom_profile_image_url}
+              alt="Perfil"
+              className="avatar-image"
+              draggable={false}
+            />
+          </div>
+        ) : (
+          <div className="avatar-container">
+            <img
+              src="/profile.png"
+              alt="Perfil"
+              className="avatar-image"
+              draggable={false}
+            />
+          </div>
+        )}
+      </div>
     </header>
   );
 };

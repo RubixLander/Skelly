@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { useUser } from '../context/UserContext'; // Asegúrate de importar el hook del contexto
+import { useUser } from '../context/UserContext'; // Hook del contexto
 
 const LoginPage = () => {
-  const { setUser } = useUser(); // Usamos el hook del contexto
+  const { setUser } = useUser();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
@@ -34,11 +34,16 @@ const LoginPage = () => {
         return;
       }
 
-      // Login exitoso
-      setUser(data.user); // Guardamos el usuario en el contexto
+      // ✅ Login exitoso
+      setUser(data.user);
       localStorage.setItem('appLoggedIn', 'true');
       localStorage.setItem('user', JSON.stringify(data.user));
       setError('');
+
+      // 🔥 Señalamos que venimos del login
+      sessionStorage.setItem('fromLogin', 'true');
+
+      // Redirigir al home (el useEffect del otro componente se encargará de ir a /comunidades)
       router.push('/');
     } catch (err) {
       console.error(err);

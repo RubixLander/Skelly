@@ -20,4 +20,10 @@ export class UsersDetailsController {
   async unfollowUser(@Body() dto: FollowUserDto) {
     return this.usersService.unfollowUser(dto);
   }
+
+  @Get(":id/comments")
+  async getFollowingComments(@Param("id") id: string) {
+    return this.usersService.getFollowingComments(id);
+  }
+
 }

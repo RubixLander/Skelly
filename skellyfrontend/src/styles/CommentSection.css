@@ -1,9 +1,23 @@
+/* 🔒 Encapsulación completa para CommentSection */
 .comment-section {
+  all: initial;
+  display: block;
+  box-sizing: border-box;
   padding: 2rem;
   max-width: 1100px;
   margin: 0 auto;
   font-family: 'Arial', sans-serif;
   color: white;
+  background-color: transparent;
+}
+
+/* 🔒 Asegura herencia interna coherente */
+.comment-section * {
+  all: unset;
+  box-sizing: border-box;
+  display: revert;
+  font-family: inherit;
+  color: inherit;
 }
 
 /* Result item */
@@ -39,7 +53,7 @@
 }
 
 /* Lista de comentarios */
-.comment-list {
+.comment-section .comment-list {
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
@@ -47,7 +61,7 @@
 }
 
 /* Comentarios */
-.comment-card {
+.comment-section .comment-card {
   display: flex;
   background-color: #282828;
   color: white;
@@ -57,35 +71,35 @@
   gap: 1rem;
 }
 
-.comment-card.album-playlist {
+.comment-section .comment-card.album-playlist {
   background-color: #333333;
   border: 2px solid #444444;
 }
 
-.comment-card.reply {
+.comment-section .comment-card.reply {
   background-color: #333;
   border-left: 3px solid #1db954;
 }
 
 /* Avatar */
-.avatar {
+.comment-section .avatar {
   width: 52px;
   height: 52px;
   object-fit: cover;
   border-radius: 50%;
 }
 
-.comment-content {
+.comment-section .comment-content {
   flex: 1;
 }
 
-.nickname {
+.comment-section .nickname {
   font-weight: bold;
   margin-bottom: 0.25rem;
 }
 
 /* Botones de acción en comentarios */
-.comment-content button {
+.comment-section .comment-content button {
   margin-top: 0.5rem;
   background: none;
   border: none;
@@ -94,11 +108,11 @@
   padding: 0;
 }
 
-.comment-content button:hover {
+.comment-section .comment-content button:hover {
   text-decoration: underline;
 }
 
-.replies {
+.comment-section .replies {
   margin-top: 0.75rem;
   display: flex;
   flex-direction: column;
@@ -106,7 +120,7 @@
 }
 
 /* Mensaje si no hay comentarios */
-.no-comments {
+.comment-section .no-comments {
   text-align: center;
   font-size: 1rem;
   color: #b3b3b3;
@@ -116,7 +130,7 @@
 }
 
 /* Botón volver */
-.back-button {
+.comment-section .back-button {
   background: #1db954;
   border: none;
   color: white;
@@ -129,12 +143,12 @@
   transition: background 0.2s ease-in-out;
 }
 
-.back-button:hover {
+.comment-section .back-button:hover {
   background: #17a74a;
 }
 
 /* Caja de comentarios */
-.new-comment-form {
+.comment-section .new-comment-form {
   position: fixed;
   bottom: 90px; /* 🔹 queda encima del reproductor */
   left: 50%;
@@ -153,7 +167,7 @@
   transition: bottom 0.3s ease;
 }
 
-.new-comment-form textarea {
+.comment-section .new-comment-form textarea {
   width: 100%;
   min-height: 60px;
   resize: none;
@@ -166,13 +180,13 @@
   box-sizing: border-box;
 }
 
-.new-comment-form textarea:focus {
+.comment-section .new-comment-form textarea:focus {
   border: 1px solid #1db954; /* verde al enfocar */
   background: #1f1f1f;
   outline: none;
 }
 
-.new-comment-form button {
+.comment-section .new-comment-form button {
   align-self: flex-end;
   background: #1db954;
   border: none;
@@ -183,14 +197,14 @@
   font-weight: bold;
 }
 
-.new-comment-form button:disabled {
+.comment-section .new-comment-form button:disabled {
   background: #444;
   cursor: not-allowed;
 }
 
 /* Bloque de "Respondiendo a" */
-.replying-to {
-  background: #000000;          /* fondo más claro */
+.comment-section .replying-to {
+  background: #000000;
   padding: 0.9rem 1rem;
   border-radius: 8px;
   width: 100%;
@@ -203,7 +217,7 @@
   box-sizing: border-box;
 }
 
-.replying-to button {
+.comment-section .replying-to button {
   background: transparent;
   border: none;
   color: #e63946;
@@ -211,12 +225,12 @@
   cursor: pointer;
 }
 
-.replying-to button:hover {
+.comment-section .replying-to button:hover {
   text-decoration: underline;
 }
 
 /* Botón ver respuestas estilo Instagram */
-.toggle-replies-btn {
+.comment-section .toggle-replies-btn {
   margin-left: 1rem;
   font-size: 0.9rem;
   color: #8e8e8e;
@@ -225,16 +239,16 @@
   cursor: pointer;
 }
 
-.toggle-replies-btn:hover {
+.comment-section .toggle-replies-btn:hover {
   text-decoration: underline;
 }
 
 /* Ajuste dinámico con textarea activo */
 body.comment-active .spotify-player {
-  bottom: 120px; /* 🔹 reproductor se levanta */
+  bottom: 120px;
   transition: bottom 0.3s ease;
 }
 
-body.comment-active .new-comment-form {
-  bottom: 180px; /* 🔹 la caja sube un poco más */
+body.comment-active .comment-section .new-comment-form {
+  bottom: 180px;
 }

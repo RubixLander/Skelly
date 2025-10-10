@@ -12,6 +12,7 @@ import CommentSection from "./commentsSection"; // ✅ Importamos CommentSection
 import { useUser } from "../context/UserContext";
 import "../styles/searchResults.css";
 import UserItemDetails from "./UserItemDetails";
+import ShareToGroupModal from "./ShareToGroupModal";
 
 interface SearchResultsProps {
   searchResults: SearchResult | null;
@@ -61,6 +62,23 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   const [loadingFavorite, setLoadingFavorite] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const router = useRouter();
+
+  // ======= NUEVOS ESTADOS PARA COMPARTIR =======
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [sharePayload, setSharePayload] = useState<{
+    spotify_uri: string;
+    content_type: "track" | "album" | "playlist" | "artist";
+  } | null>(null);
+
+  const handleShareClick = (
+    spotify_uri: string,
+    content_type: "track" | "album" | "playlist" | "artist"
+  ) => {
+    // abrimos el modal flotante con la carga útil
+    setSharePayload({ spotify_uri, content_type });
+    setShareModalOpen(true);
+  };
+  // =============================================
 
   const isBibliotecaPage = router.pathname === "/biblioteca";
   const isProfilescaPage = router.pathname === "/profiles";
@@ -114,25 +132,25 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     return "Desconocido";
   };
 
+  const [previousTab, setPreviousTab] = useState<
+    "tracks" | "albums" | "artists" | "playlists" | "users"
+  >("tracks");
+
   const handleViewDetails = (
     item: SpotifyArtist | SpotifyAlbum | SpotifyPlaylist,
     type: "artist" | "album" | "playlist"
   ) => {
+    setPreviousTab(activeTab); // guardamos el tab actual
     setNavigation({ view: "details", item, type });
   };
 
-  const handleBackToList = () => {
-    setNavigation({ view: "list" });
-    setActiveTab("users"); // ✅ fuerza volver al tab de usuarios
-  };
-
-  // ✅ Nuevo handler para abrir comentarios
   const handleViewComments = (
     spotify_uri: string,
     content_type: "track" | "album" | "playlist",
     image_url: string,
     title: string
   ) => {
+    setPreviousTab(activeTab); // guardamos el tab actual
     setNavigation({
       view: "comments",
       spotify_uri,
@@ -140,6 +158,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       image_url,
       title,
     });
+  };
+
+  const handleBackToList = () => {
+    setNavigation({ view: "list" });
+    setActiveTab(previousTab); // ✅ fuerza volver al tab de usuarios
   };
 
   const handleFavoriteToggle = async (
@@ -228,17 +251,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       onClick={() => track.uri && onPlayUri(track.uri)}
                       disabled={!track.uri}
                       className={
-                        track.uri
-                          ? "play-button enabled"
-                          : "play-button disabled"
+                        track.uri ? "play-button enabled" : "play-button disabled"
                       }
                     >
                       Reproducir
                     </button>
                     <button
-                      className={`favorite-button ${
-                        isFavorite ? "favorited" : ""
-                      }`}
+                      className={`favorite-button ${isFavorite ? "favorited" : ""}`}
                       disabled={loadingFavorite === track.uri}
                       onClick={() =>
                         handleFavoriteToggle(
@@ -268,6 +287,14 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     >
                       💬 Comentarios
                     </button>
+
+                    {/* BOTÓN COMPARTIR (track) */}
+                    <button
+                      className="share-button"
+                      onClick={() => handleShareClick(track.uri!, "track")}
+                    >
+                      🔗 Compartir
+                    </button>
                   </div>
                 </div>
               );
@@ -287,11 +314,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   onClick={() => handleViewDetails(album, "album")}
                   style={{ cursor: "pointer" }}
                 >
-                  <img
-                    src={imageUrl}
-                    alt={album.name}
-                    className="item-image"
-                  />
+                  <img src={imageUrl} alt={album.name} className="item-image" />
                   <p className="item-title">{album.name}</p>
                   <p className="item-subtitle">{getArtistNames(album)}</p>
                   <div className="item-actions">
@@ -302,17 +325,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       }}
                       disabled={!album.uri}
                       className={
-                        album.uri
-                          ? "play-button enabled"
-                          : "play-button disabled"
+                        album.uri ? "play-button enabled" : "play-button disabled"
                       }
                     >
                       Reproducir Álbum
                     </button>
                     <button
-                      className={`favorite-button ${
-                        isFavorite ? "favorited" : ""
-                      }`}
+                      className={`favorite-button ${isFavorite ? "favorited" : ""}`}
                       disabled={loadingFavorite === album.uri}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -324,11 +343,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         );
                       }}
                     >
-                      {loadingFavorite === album.uri
-                        ? "Guardando..."
-                        : isFavorite
-                        ? "❤️"
-                        : "🤍"}
+                      {loadingFavorite === album.uri ? "Guardando..." : isFavorite ? "❤️" : "🤍"}
                     </button>
                     <button
                       className="comment-button"
@@ -343,6 +358,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       }}
                     >
                       Ver comentarios
+                    </button>
+
+                    {/* BOTÓN COMPARTIR (album) */}
+                    <button
+                      className="share-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShareClick(album.uri!, "album");
+                      }}
+                    >
+                      🔗 Compartir
                     </button>
                   </div>
                 </div>
@@ -363,11 +389,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   onClick={() => handleViewDetails(artist, "artist")}
                   style={{ cursor: "pointer" }}
                 >
-                  <img
-                    src={imageUrl}
-                    alt={artist.name}
-                    className="item-image"
-                  />
+                  <img src={imageUrl} alt={artist.name} className="item-image" />
                   <p className="item-title">{artist.name}</p>
                   <div className="item-actions">
                     <button
@@ -377,17 +399,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       }}
                       disabled={!artist.uri}
                       className={
-                        artist.uri
-                          ? "play-button enabled"
-                          : "play-button disabled"
+                        artist.uri ? "play-button enabled" : "play-button disabled"
                       }
                     >
                       Reproducir Top Tracks
                     </button>
                     <button
-                      className={`favorite-button ${
-                        isFavorite ? "favorited" : ""
-                      }`}
+                      className={`favorite-button ${isFavorite ? "favorited" : ""}`}
                       disabled={loadingFavorite === artist.uri}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -399,11 +417,18 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         );
                       }}
                     >
-                      {loadingFavorite === artist.uri
-                        ? "Guardando..."
-                        : isFavorite
-                        ? "❤️"
-                        : "🤍"}
+                      {loadingFavorite === artist.uri ? "Guardando..." : isFavorite ? "❤️" : "🤍"}
+                    </button>
+
+                    {/* BOTÓN COMPARTIR (artist) */}
+                    <button
+                      className="share-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShareClick(artist.uri!, "artist");
+                      }}
+                    >
+                      🔗 Compartir
                     </button>
                   </div>
                 </div>
@@ -415,9 +440,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         return (
           <div className="results-grid">
             {searchResults.playlists
-              ?.filter(
-                (playlist): playlist is SpotifyPlaylist => playlist !== null
-              )
+              ?.filter((playlist): playlist is SpotifyPlaylist => playlist !== null)
               .map((playlist) => {
                 const imageUrl = getImageUrl(playlist, "playlist");
                 const isFavorite = favorites.has(playlist.uri!);
@@ -433,9 +456,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       alt={playlist?.name || "Unknown Playlist"}
                       className="item-image"
                     />
-                    <p className="item-title">
-                      {playlist?.name || "Unknown Playlist"}
-                    </p>
+                    <p className="item-title">{playlist?.name || "Unknown Playlist"}</p>
                     <p className="item-subtitle">
                       Por {playlist?.owner?.display_name || "Desconocido"}
                     </p>
@@ -447,17 +468,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         }}
                         disabled={!playlist.uri}
                         className={
-                          playlist.uri
-                            ? "play-button enabled"
-                            : "play-button disabled"
+                          playlist.uri ? "play-button enabled" : "play-button disabled"
                         }
                       >
                         Reproducir Playlist
                       </button>
                       <button
-                        className={`favorite-button ${
-                          isFavorite ? "favorited" : ""
-                        }`}
+                        className={`favorite-button ${isFavorite ? "favorited" : ""}`}
                         disabled={loadingFavorite === playlist.uri}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -469,11 +486,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                           );
                         }}
                       >
-                        {loadingFavorite === playlist.uri
-                          ? "Guardando..."
-                          : isFavorite
-                          ? "❤️"
-                          : "🤍"}
+                        {loadingFavorite === playlist.uri ? "Guardando..." : isFavorite ? "❤️" : "🤍"}
                       </button>
                       <button
                         className="comment-button"
@@ -489,6 +502,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       >
                         Ver comentarios
                       </button>
+
+                      {/* BOTÓN COMPARTIR (playlist) */}
+                      <button
+                        className="share-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShareClick(playlist.uri!, "playlist");
+                        }}
+                      >
+                        🔗 Compartir
+                      </button>
                     </div>
                   </div>
                 );
@@ -498,9 +522,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       case "users":
         const handleUserClick = async (usr: any) => {
           try {
-            const res = await fetch(
-              `http://localhost:3001/users-details/${usr.user_id}`
-            );
+            const res = await fetch(`http://localhost:3001/users-details/${usr.user_id}`);
             if (!res.ok) throw new Error("Error al obtener detalles del usuario");
             const fullUser = await res.json();
             setNavigation({ view: "user-details", user: fullUser });
@@ -520,11 +542,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   onClick={() => handleUserClick(usr)}
                   style={{ cursor: "pointer" }}
                 >
-                  <img
-                    src={usr.custom_profile_image_url || "/profile.png"}
-                    alt={usr.nickname}
-                    className="item-image"
-                  />
+                  <img src={usr.custom_profile_image_url || "/profile.png"} alt={usr.nickname} className="item-image" />
                   <p className="item-title">{usr.nickname}</p>
                   <p className="item-subtitle">{usr.display_email}</p>
                   {usr.bio && <p className="item-subtitle">{usr.bio}</p>}
@@ -575,8 +593,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         onSelectUser={async (id) => {
           try {
             const res = await fetch(`http://localhost:3001/users-details/${id}`);
-            if (!res.ok)
-              throw new Error("Error al obtener detalles del usuario");
+            if (!res.ok) throw new Error("Error al obtener detalles del usuario");
             const fullUser = await res.json();
             setNavigation({ view: "user-details", user: fullUser });
           } catch (err) {
@@ -588,49 +605,44 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     );
   }
 
+  const hasResultsToShow =
+    (activeTab === "tracks" && searchResults?.tracks?.length > 0) ||
+    (activeTab === "albums" && searchResults?.albums?.length > 0) ||
+    (activeTab === "artists" && searchResults?.artists?.length > 0) ||
+    (activeTab === "playlists" && searchResults?.playlists?.length > 0) ||
+    (activeTab === "users" && searchResults?.users?.length > 0);
+
   return (
     <div className="search-results-container">
-      {searchResults && !isSearching && showTabs && (
+      {searchResults && !isSearching && showTabs && navigation.view === "list" && hasResultsToShow && (
         <div className="tabs-container">
           <button
             onClick={() => setActiveTab("tracks")}
-            className={
-              activeTab === "tracks" ? "tab-button active" : "tab-button inactive"
-            }
+            className={activeTab === "tracks" ? "tab-button active" : "tab-button inactive"}
           >
             Canciones
           </button>
           <button
             onClick={() => setActiveTab("albums")}
-            className={
-              activeTab === "albums" ? "tab-button active" : "tab-button inactive"
-            }
+            className={activeTab === "albums" ? "tab-button active" : "tab-button inactive"}
           >
             Álbumes
           </button>
           <button
             onClick={() => setActiveTab("artists")}
-            className={
-              activeTab === "artists" ? "tab-button active" : "tab-button inactive"
-            }
+            className={activeTab === "artists" ? "tab-button active" : "tab-button inactive"}
           >
             Artistas
           </button>
           <button
             onClick={() => setActiveTab("playlists")}
-            className={
-              activeTab === "playlists"
-                ? "tab-button active"
-                : "tab-button inactive"
-            }
+            className={activeTab === "playlists" ? "tab-button active" : "tab-button inactive"}
           >
             Playlists
           </button>
           <button
             onClick={() => setActiveTab("users")}
-            className={
-              activeTab === "users" ? "tab-button active" : "tab-button inactive"
-            }
+            className={activeTab === "users" ? "tab-button active" : "tab-button inactive"}
           >
             Usuarios
           </button>
@@ -638,6 +650,21 @@ const SearchResults: React.FC<SearchResultsProps> = ({
       )}
 
       <div>{renderResults()}</div>
+
+      {/* ======= Modal flotante para compartir (si existe payload) ======= */}
+      {sharePayload && (
+        <ShareToGroupModal
+          open={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false);
+            setSharePayload(null);
+          }}
+          spotifyUri={sharePayload.spotify_uri}
+          contentType={sharePayload.content_type}
+          userId={user?.user_id}
+        />
+      )}
+      {/* ============================================================== */}
     </div>
   );
 };

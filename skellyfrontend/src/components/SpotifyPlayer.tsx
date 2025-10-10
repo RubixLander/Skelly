@@ -103,7 +103,6 @@ const SpotifyPlayer: React.FC = () => {
   if (isLoading) {
     return (
       <div style={{ padding: '10px', textAlign: 'center' }}>
-        <p>Initializing Spotify player...</p>
       </div>
     );
   }

@@ -238,7 +238,10 @@ const UserItemDetails: React.FC<UserItemDetailsProps> = ({ user, onBack, onSelec
 
   return (
     <div className="user-details-container">
-      <button onClick={onBack} className="back-button">← Volver</button>
+      <button onClick={onBack} className="tab-button back-button">
+        ← Volver
+      </button>
+
 
       <div className="user-header">
         <img
@@ -246,15 +249,20 @@ const UserItemDetails: React.FC<UserItemDetailsProps> = ({ user, onBack, onSelec
           alt={user.nickname}
           className="user-avatar"
         />
-        <div>
-          <h2>{user.nickname}</h2>
-          {loggedUser && loggedUser.user_id !== user.user_id && (
-            <button onClick={handleFollowToggle} disabled={loadingFollow} className="follow-button">
-              {loadingFollow ? "..." : isFollowing ? "Dejar de seguir" : "Seguir"}
-            </button>
-          )}
+        <div className="user-info">
+            <h2>{user.nickname}</h2>
+            {user.bio && <p className="user-bio">{user.bio}</p>}
+            {loggedUser && loggedUser.user_id !== user.user_id && (
+              <button
+                onClick={handleFollowToggle}
+                disabled={loadingFollow}
+                className={`tab-button follow-button ${isFollowing ? "active" : ""}`}
+              >
+                {loadingFollow ? "..." : isFollowing ? "Dejar de seguir" : "Seguir"}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
       {/* pestañas */}
       <div className="tabs-container">

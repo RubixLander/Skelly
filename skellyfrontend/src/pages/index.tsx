@@ -8,27 +8,44 @@ import SearchResults from "../components/SearchResults";
 import SpotifyPlayer from "../components/SpotifyPlayer";
 import Header from "../components/header";
 import { useSearchContext } from "../context/SearchContext";
-import { SearchResult } from "../types/spotify-types"; // si lo tienes
+import { SearchResult } from "../types/spotify-types";
 
 const HomePage: React.FC = () => {
-  const { searchResults: spotifyResults, isSearching: isSearchingSpotify, handlePlayUri, localError, clearError } =
-    usePlayer();
-  const { searchResults: userResultsContext, isSearching: isSearchingUsers } = useSearchContext();
+  const {
+    searchResults: spotifyResults,
+    isSearching: isSearchingSpotify,
+    handlePlayUri,
+    localError,
+    clearError,
+  } = usePlayer();
+  const {
+    searchResults: userResultsContext,
+    isSearching: isSearchingUsers,
+  } = useSearchContext();
 
-  const { isAuthenticated, isLoading, error: contextError, deviceId } = useContext(SpotifyContext);
-  const [activeTab, setActiveTab] = useState("Canciones");
+  const {
+    isAuthenticated,
+    isLoading,
+    error: contextError,
+    deviceId,
+  } = useContext(SpotifyContext);
+
+  const [activeTab, setActiveTab] = useState("Comunidades");
   const [view, setView] = useState<"search" | "library">("search");
   const router = useRouter();
 
-  // Detectar autenticación de Spotify y mandar al login SOLO si no se ha pasado aún
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      const alreadyLogged = localStorage.getItem("appLoggedIn");
-      if (!alreadyLogged) {
-        router.push("/login");
-      }
-    }
-  }, [isAuthenticated, isLoading, router]);
+  // ✅ Después de iniciar sesión correctamente → ir a /comunidades
+useEffect(() => {
+  // Solo redirigir si el usuario acaba de iniciar sesión
+  const fromLogin = sessionStorage.getItem("fromLogin");
+
+  if (!isLoading && isAuthenticated && fromLogin === "true") {
+    router.replace("/comunidades");
+    sessionStorage.removeItem("fromLogin"); // evita que se repita
+  }
+}, [isAuthenticated, isLoading, router]);
+
+
 
   // Estado inicial (cargando)
   if (isLoading) {
@@ -66,13 +83,14 @@ const HomePage: React.FC = () => {
     );
   }
 
-  // Si no está autenticado → botón de login Spotify
+  // Si no está autenticado → mostrar login Spotify
   if (!isAuthenticated) {
     return (
       <div style={{ padding: "20px", textAlign: "center" }}>
         <h1>SkellyTunes</h1>
         <p>
-          You are not authenticated. In order to use SkellyTunes, you must link a Spotify account and log in.
+          You are not authenticated. In order to use SkellyTunes, you must link a
+          Spotify account and log in.
         </p>
         <SpotifyAuthButton />
       </div>
@@ -91,14 +109,16 @@ const HomePage: React.FC = () => {
   // ✅ Estado de búsqueda unificado
   const isAnySearching = Boolean(isSearchingSpotify || isSearchingUsers);
 
-  // ✅ Si está autenticado Y pasó login → mostrar app
+  // ✅ Si está autenticado → mostrar app
   return (
     <div style={{ fontFamily: "Arial, sans-serif", paddingBottom: "100px" }}>
       <Header activeTab={activeTab} onTabChange={setActiveTab} />
 
       <main style={{ padding: "20px" }}>
         {localError && (
-          <div style={{ color: "red", textAlign: "center", marginBottom: "20px" }}>
+          <div
+            style={{ color: "red", textAlign: "center", marginBottom: "20px" }}
+          >
             Error: {localError}
             <button onClick={clearError} style={{ marginLeft: "10px" }}>
               Clear
@@ -106,7 +126,7 @@ const HomePage: React.FC = () => {
           </div>
         )}
 
-        {/* Aquí es donde controlamos la vista */}
+        {/* Control de vista */}
         {view === "search" ? (
           <SearchResults
             searchResults={combinedResults}
