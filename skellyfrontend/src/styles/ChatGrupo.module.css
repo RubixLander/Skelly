@@ -147,3 +147,20 @@
 .chat-input button:hover {
   background: #027a64;
 }
+
+/* src/styles/ChatGrupo.module.css */
+
+.date-separator {
+    text-align: center;
+    margin: 15px 0 10px;
+}
+
+.date-separator span {
+    background-color: #202c33; /* Fondo oscuro similar al header */
+    color: #999; /* Gris claro */
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}

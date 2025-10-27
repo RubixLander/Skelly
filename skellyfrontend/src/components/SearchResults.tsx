@@ -271,8 +271,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       {loadingFavorite === track.uri
                         ? "Guardando..."
                         : isFavorite
-                        ? "❤️"
-                        : "🤍"}
+                        ? "✅️"
+                        : "➕"}
                     </button>
                     <button
                       className="comment-button"
@@ -343,7 +343,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         );
                       }}
                     >
-                      {loadingFavorite === album.uri ? "Guardando..." : isFavorite ? "❤️" : "🤍"}
+                      {loadingFavorite === album.uri ? "Guardando..." : isFavorite ? "✅️️" : "➕"}
                     </button>
                     <button
                       className="comment-button"
@@ -417,7 +417,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         );
                       }}
                     >
-                      {loadingFavorite === artist.uri ? "Guardando..." : isFavorite ? "❤️" : "🤍"}
+                      {loadingFavorite === artist.uri ? "Guardando..." : isFavorite ? "✅️️" : "➕"}
                     </button>
 
                     {/* BOTÓN COMPARTIR (artist) */}
@@ -486,7 +486,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                           );
                         }}
                       >
-                        {loadingFavorite === playlist.uri ? "Guardando..." : isFavorite ? "❤️" : "🤍"}
+                        {loadingFavorite === playlist.uri ? "Guardando..." : isFavorite ? "✅️️" : "➕"}
                       </button>
                       <button
                         className="comment-button"
@@ -519,44 +519,54 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               })}
           </div>
         );
-      case "users":
-        const handleUserClick = async (usr: any) => {
-          try {
+case "users":
+    const handleUserClick = async (usr: any) => {
+        try {
             const res = await fetch(`http://localhost:3001/users-details/${usr.user_id}`);
             if (!res.ok) throw new Error("Error al obtener detalles del usuario");
             const fullUser = await res.json();
             setNavigation({ view: "user-details", user: fullUser });
-          } catch (err) {
+        } catch (err) {
             console.error("Error cargando detalles de usuario:", err);
             alert("No se pudo cargar la información del usuario.");
-          }
-        };
+        }
+    };
 
-        return (
-          <div className="results-grid">
-            {searchResults.users?.length > 0 ? (
-              searchResults.users.map((usr: any) => (
-                <div
-                  key={usr.user_id}
-                  className="result-item"
-                  onClick={() => handleUserClick(usr)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <img src={usr.custom_profile_image_url || "/profile.png"} alt={usr.nickname} className="item-image" />
-                  <p className="item-title">{usr.nickname}</p>
-                  <p className="item-subtitle">{usr.display_email}</p>
-                  {usr.bio && <p className="item-subtitle">{usr.bio}</p>}
-                </div>
-              ))
+    // 🔑 Declaramos la variable 'users' al inicio del case
+    const users = searchResults.users || []; 
+
+    return (
+        // Mantenemos el results-grid como contenedor principal
+        <div className="results-grid">
+            {users.length > 0 ? (
+                // ✅ Mostrar la cuadrícula de resultados
+                users.map((usr: any) => (
+                    <div
+                        key={usr.user_id}
+                        className="result-item"
+                        onClick={() => handleUserClick(usr)}
+                        style={{ cursor: "pointer" }}
+                    >
+                        <img src={usr.custom_profile_image_url || "/profile.png"} alt={usr.nickname} className="item-image" />
+                        <p className="item-title">{usr.nickname}</p>
+                        <p className="item-subtitle">{usr.display_email}</p>
+                        {usr.bio && <p className="item-subtitle">{usr.bio}</p>}
+                    </div>
+                ))
             ) : (
-              <p>No se encontraron usuarios</p>
+                // 🚨 SOLUCIÓN: Usamos un div que rompe la cuadrícula para asegurar visibilidad
+                <div style={{ width: '100%', textAlign: 'center', gridColumn: '1 / -1' }}>
+                    <p className="no-results-message" style={{ color: '#000000ff', fontSize: '1.2rem', marginTop: '20px' }}>
+                        No existen usuarios con ese nombre
+                    </p>
+                </div>
             )}
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+        </div>
+    );
+ default:
+  return null;
+}
+ };
 
   if (isSearching) {
     return <p className="searching-message">Buscando...</p>;
@@ -605,68 +615,70 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     );
   }
 
-  const hasResultsToShow =
-    (activeTab === "tracks" && searchResults?.tracks?.length > 0) ||
-    (activeTab === "albums" && searchResults?.albums?.length > 0) ||
-    (activeTab === "artists" && searchResults?.artists?.length > 0) ||
-    (activeTab === "playlists" && searchResults?.playlists?.length > 0) ||
-    (activeTab === "users" && searchResults?.users?.length > 0);
+  const hasAnyResults =
+    searchResults?.tracks?.length > 0 ||
+    searchResults?.albums?.length > 0 ||
+    searchResults?.artists?.length > 0 ||
+    searchResults?.playlists?.length > 0 ||
+    searchResults?.users?.length > 0;
 
-  return (
-    <div className="search-results-container">
-      {searchResults && !isSearching && showTabs && navigation.view === "list" && hasResultsToShow && (
-        <div className="tabs-container">
-          <button
-            onClick={() => setActiveTab("tracks")}
-            className={activeTab === "tracks" ? "tab-button active" : "tab-button inactive"}
-          >
-            Canciones
-          </button>
-          <button
-            onClick={() => setActiveTab("albums")}
-            className={activeTab === "albums" ? "tab-button active" : "tab-button inactive"}
-          >
-            Álbumes
-          </button>
-          <button
-            onClick={() => setActiveTab("artists")}
-            className={activeTab === "artists" ? "tab-button active" : "tab-button inactive"}
-          >
-            Artistas
-          </button>
-          <button
-            onClick={() => setActiveTab("playlists")}
-            className={activeTab === "playlists" ? "tab-button active" : "tab-button inactive"}
-          >
-            Playlists
-          </button>
-          <button
-            onClick={() => setActiveTab("users")}
-            className={activeTab === "users" ? "tab-button active" : "tab-button inactive"}
-          >
-            Usuarios
-          </button>
-        </div>
-      )}
-
-      <div>{renderResults()}</div>
-
-      {/* ======= Modal flotante para compartir (si existe payload) ======= */}
-      {sharePayload && (
-        <ShareToGroupModal
-          open={shareModalOpen}
-          onClose={() => {
-            setShareModalOpen(false);
-            setSharePayload(null);
-          }}
-          spotifyUri={sharePayload.spotify_uri}
-          contentType={sharePayload.content_type}
-          userId={user?.user_id}
-        />
-      )}
-      {/* ============================================================== */}
+return (
+  <div className="search-results-container">
+   {/* 🚨 CORRECCIÓN CLAVE: Usar hasAnyResults para controlar la visibilidad del menú 🚨 */}
+   {searchResults && !isSearching && showTabs && navigation.view === "list" && hasAnyResults && (
+    <div className="tabs-container">
+            {/* ... (Botones de tabs son iguales) ... */}
+     <button
+      onClick={() => setActiveTab("tracks")}
+      className={activeTab === "tracks" ? "tab-button active" : "tab-button inactive"}
+     >
+      Canciones
+     </button>
+     <button
+      onClick={() => setActiveTab("albums")}
+      className={activeTab === "albums" ? "tab-button active" : "tab-button inactive"}
+     >
+      Álbumes
+     </button>
+     <button
+      onClick={() => setActiveTab("artists")}
+      className={activeTab === "artists" ? "tab-button active" : "tab-button inactive"}
+     >
+      Artistas
+     </button>
+     <button
+      onClick={() => setActiveTab("playlists")}
+      className={activeTab === "playlists" ? "tab-button active" : "tab-button inactive"}
+     >
+      Playlists
+     </button>
+     <button
+      onClick={() => setActiveTab("users")}
+      className={activeTab === "users" ? "tab-button active" : "tab-button inactive"}
+     >
+      Usuarios
+     </button>
     </div>
-  );
+   )}
+
+   <div>{renderResults()}</div>
+
+   {/* ======= Modal flotante para compartir (si existe payload) ======= */}
+   {sharePayload && (
+    <ShareToGroupModal
+     open={shareModalOpen}
+     onClose={() => {
+      setShareModalOpen(false);
+      setSharePayload(null);
+     }}
+     spotifyUri={sharePayload.spotify_uri}
+     contentType={sharePayload.content_type}
+     userId={user?.user_id}
+    />
+   )}
+   {/* ============================================================== */}
+  </div>
+ );
 };
 
 export default SearchResults;

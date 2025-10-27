@@ -93,59 +93,65 @@ const Comunidades: React.FC = () => {
     }
   };
 
-  const fileToBase64 = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (e) => reject(e);
-      reader.readAsDataURL(file);
-    });
 
-  const handleCreate = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    if (!user || !user.user_id) return alert('Debes estar autenticado');
-    if (!name.trim()) return alert('El nombre es obligatorio');
 
-    setCreando(true);
-    setError(null);
+const handleCreate = async (e?: React.FormEvent) => {
+  e?.preventDefault();
+  if (!user || !user.user_id) return alert('Debes estar autenticado');
+  if (!name.trim()) return alert('El nombre es obligatorio');
 
-    try {
-      let image_url = imageUrlInput.trim() || null;
-      if (imageFile) image_url = await fileToBase64(imageFile);
+  setCreando(true);
+  setError(null);
 
-      const body = {
-        user_id: user.user_id,
-        name: name.trim(),
-        description: description.trim() || null,
-        image_url,
-      };
+  try {
+   // 🛑 ELIMINAR: let image_url = imageUrlInput.trim() || null;
+   // 🛑 ELIMINAR: if (imageFile) image_url = await fileToBase64(imageFile);
 
-      const res = await fetch(`${API_BASE}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-        body: JSON.stringify(body),
-      });
+   // 🚨 CAMBIO CLAVE: Usar FormData para enviar los datos y el archivo
+   const formData = new FormData();
+   
+   formData.append('user_id', user.user_id);
+   formData.append('name', name.trim());
+   // description: enviamos la cadena o una vacía
+   formData.append('description', description.trim() || ''); 
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+   if (imageFile) {
+    formData.append('image', imageFile); // 🚨 Envía el archivo binario, campo 'image'
+   } else if (imageUrlInput.trim()) {
+    formData.append('image_url', imageUrlInput.trim()); // Si hay URL externa
+   }
+   
+   // Envío de la solicitud
+   const res = await fetch(`${API_BASE}`, {
+    method: 'POST',
+    headers: {
+     // 🛑 ELIMINAR Content-Type: 'application/json'
+     // Solo se pasa el Authorization header
+     ...authHeaders,
+    },
+    body: formData, // 🚨 Envía FormData
+   });
 
-      await fetchMisComunidades();
-      await fetchDescubrir();
-      setName('');
-      setDescription('');
-      setImageFile(null);
-      setImageUrlInput('');
-      setTab('tus');
-    } catch (err) {
-      console.error(err);
-      setError('Error creando comunidad');
-      alert('No se pudo crear la comunidad');
-    } finally {
-      setCreando(false);
-    }
-  };
+   if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));
+            throw new Error(errorData.message || `HTTP ${res.status}`);
+        }
+
+   await fetchMisComunidades();
+   await fetchDescubrir();
+   setName('');
+   setDescription('');
+   setImageFile(null);
+   setImageUrlInput('');
+   setTab('tus');
+  } catch (err: any) {
+   console.error(err);
+   setError('Error creando comunidad');
+   alert(`No se pudo crear la comunidad. ${err.message || ''}`);
+  } finally {
+   setCreando(false);
+  }
+ };
 
   const irAlChat = (group_id: string) => {
     router.push(`/comunidad/${group_id}`);
@@ -190,12 +196,8 @@ const Comunidades: React.FC = () => {
           <div>
             <div className="comunidades-descubrir-header">
               <button onClick={fetchDescubrir}>
-                {loadingDescubrir ? 'Cargando...' : 'Refrescar 20 comunidades'}
+                {loadingDescubrir ? 'Cargando...' : 'Refrescar comunidades'}
               </button>
-              <p>
-                Mostrando hasta 20 comunidades aleatorias a las que no
-                perteneces.
-              </p>
             </div>
 
             <div className="comunidades-grid">

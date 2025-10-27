@@ -31,20 +31,20 @@ const Header: React.FC<HeaderProps> = ({
     []
   );
 
-  useEffect(() => {
-    if (router.pathname === "/comunidades") {
-      onTabChange("Comunidades");
-    }
-    if (router.pathname === "/biblioteca") {
-      onTabChange("Tu biblioteca");
-    }
-    if (router.pathname === "/seguidos") {
-      onTabChange("Siguiendo");
-    }
-    if (router.pathname === "/profiles") {
-      onTabChange("Tu perfil");
-    }
-  }, [router.pathname, onTabChange]);
+useEffect(() => {
+ // CORRECCIÓN: Si la ruta es la raíz '/', desactiva todas las pestañas.
+if (router.pathname === "/") {
+onTabChange(""); // Establece un valor inactivo para que activeTab no coincida con nada.
+} else if (router.pathname === "/comunidades") {
+ onTabChange("Comunidades");
+ } else if (router.pathname === "/biblioteca") {
+onTabChange("Tu biblioteca");
+ } else if (router.pathname === "/seguidos") {
+ onTabChange("Siguiendo");
+ } else if (router.pathname === "/profiles") {
+ onTabChange("Tu perfil");
+ }
+}, [router.pathname, onTabChange]);
 
   const goToComunidades = () => {
     onTabChange("Comunidades");
@@ -140,28 +140,26 @@ const Header: React.FC<HeaderProps> = ({
         style={{ cursor: "pointer" }}
         title="Ir a perfil"
       >
-        {user?.custom_profile_image_url ? (
-          <div className="avatar-container">
-            <img
-              src={user.custom_profile_image_url}
-              alt="Perfil"
-              className="avatar-image"
-              draggable={false}
-            />
-          </div>
-        ) : (
-          <div className="avatar-container">
-            <img
-              src="/profile.png"
-              alt="Perfil"
-              className="avatar-image"
-              draggable={false}
-            />
-          </div>
-        )}
-      </div>
-    </header>
-  );
+{user?.custom_profile_image_url ? (
+      <img
+       src={user.custom_profile_image_url}
+       alt="Perfil"
+       className="avatar-image"
+       draggable={false}
+              // Quitamos los estilos inline para confiar en el CSS
+      />
+    ) : (
+      <img
+       src="/profile.png"
+       alt="Perfil"
+       className="avatar-image"
+       draggable={false}
+              // Quitamos los estilos inline para confiar en el CSS
+      />
+    )}
+   </div>
+  </header>
+ );
 };
 
 export default Header;

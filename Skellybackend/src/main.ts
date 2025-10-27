@@ -1,18 +1,33 @@
+// main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { config } from 'dotenv';
 import cookieParser from 'cookie-parser';
-import * as bodyParser from 'body-parser';
+// 🚨 CAMBIO CLAVE 1: Importar NestExpressApplication para usar useStaticAssets
+import { NestExpressApplication } from '@nestjs/platform-express'; 
+import * as path from 'path'; // 🚨 Necesario para rutas de archivos
 
 config(); // Cargar variables de entorno
 
+// 🚨 CAMBIO CLAVE 2: Usar NestFactory.create<NestExpressApplication>
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.use(cookieParser());
 
-  // Aumentar límite del body a 5MB (para imágenes en base64)
-  app.use(bodyParser.json({ limit: '5mb' }));
-  app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
+  // 🛑 ELIMINAMOS bodyParser.json/urlencoded. Ya no guardamos Base64, así que no es necesario 
+  // aumentar el límite del body, y puede interferir con Multer.
+  
+  // 🚨 CONFIGURACIÓN 1: Servir archivos estáticos de USUARIOS (/uploads/)
+  // Esto mapea la URL /uploads/ a la carpeta física /public/uploads
+  app.useStaticAssets(path.join(__dirname, '..', 'public', 'uploads'), {
+    prefix: '/uploads/',
+  });
+
+  // 🔑 CONFIGURACIÓN FALTANTE: Servir archivos estáticos de COMUNIDADES (/group_uploads/) 🔑
+  app.useStaticAssets(path.join(__dirname, '..', 'public', 'group_uploads'), {
+    prefix: '/group_uploads/',
+  });
+  // ----------------------------------------------------------------------------------------
 
   // Fixed CORS configuration
   app.enableCors({

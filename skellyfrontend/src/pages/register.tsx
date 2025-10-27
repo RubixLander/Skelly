@@ -52,25 +52,18 @@ const RegisterPage = () => {
         return;
       }
 
-      // ✅ Registro exitoso: extrae datos, guarda en contexto y localStorage
-      const registeredUser = await response.json();
-
-      const userData = {
-        user_id: registeredUser.user_id,
-        display_email: registeredUser.display_email,
-        nickname: registeredUser.nickname,
-        custom_profile_image_url: registeredUser.custom_profile_image_url || null,
-        bio: registeredUser.bio || null,
-        accessToken: registeredUser.accessToken || undefined,
-      };
-
-      setUser(userData);
-
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('appLoggedIn', 'true');
+      // 🛑 Eliminamos: const registeredUser = await response.json();
+      // 🛑 Eliminamos: const userData = { ... };
+      // 🛑 Eliminamos: setUser(userData);
+      // 🛑 Eliminamos: localStorage.setItem('user', JSON.stringify(userData));
+      // 🛑 Eliminamos: localStorage.setItem('appLoggedIn', 'true');
+      
+      // ✅ Solamente dejamos la limpieza de error y la redirección
 
       setError('');
-      router.push('/');
+      // 🔑 CAMBIO: Redirige a /login para que el usuario inicie sesión manualmente
+      router.push('/login');
+      
     } catch (err) {
       console.error(err);
       setError('Error al conectar con el servidor');

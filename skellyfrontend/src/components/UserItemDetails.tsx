@@ -360,7 +360,7 @@ const UserItemDetails: React.FC<UserItemDetailsProps> = ({ user, onBack, onSelec
                             );
                           }}
                         >
-                          {loadingFavorite === fav.spotify_uri ? "..." : isFavorite ? "❤️" : "🤍"}
+                          {loadingFavorite === fav.spotify_uri ? "..." : isFavorite ? "✅️️" : "➕"}
                         </button>
                       </div>
                     </div>

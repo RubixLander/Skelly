@@ -254,7 +254,7 @@ const Biblioteca: React.FC = () => {
                       className="favorite-button"
                       disabled={removingUri === favorite.spotify_uri}
                     >
-                      {removingUri === favorite.spotify_uri ? "Eliminando..." : "❤️"}
+                      {removingUri === favorite.spotify_uri ? "Eliminando..." : "✅️️"}
                     </button>
 
                     {/* ✅ Botón comentarios: NO mostrar para artistas */}

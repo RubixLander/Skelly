@@ -247,7 +247,7 @@ async listUserGroups(userId: string) {
   return res.rows;
 }
 
-    async discoverGroups(userId: string, limit = 20) {
+    async discoverGroups(userId: string, limit = 18) {
       const res = await this.pool.query(
         `SELECT g.*
         FROM groups g

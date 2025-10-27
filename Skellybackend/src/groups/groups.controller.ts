@@ -12,28 +12,80 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  InternalServerErrorException, // <-- Añadido
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { ShareContentDto } from './dto/share-content.dto';
 import { SendMessageDto } from './dto/send-message.dto';
+import { diskStorage } from 'multer'; // 🚨 USAR DISKSTORAGE
+import * as path from 'path'; 
+import * as fs from 'fs'; 
+import { v4 as uuidv4 } from 'uuid'; // <-- Necesario para nombres únicos
 
-// Asumo que tenés un AuthGuard que añade req.user.user_id
-// @UseGuards(AuthGuard) // aplica según tu setup
+
+// 🚨 DEFINICIONES PARA DISK STORAGE 🚨
+const UPLOADS_DIR = path.join(__dirname, '..', '..', 'public', 'group_uploads');
+
+if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+const diskConfig = {
+    storage: diskStorage({
+        destination: UPLOADS_DIR,
+        filename: (req, file, cb) => {
+            const randomName = uuidv4();
+            cb(null, `${randomName}${path.extname(file.originalname)}`);
+        },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB para archivo binario
+    fileFilter: (_req: any, file: { mimetype: string; }, cb: (arg0: BadRequestException | null, arg1: boolean) => void) => {
+        if (!file.mimetype.startsWith('image/')) {
+            cb(new BadRequestException('Solo imágenes permitidas'), false);
+        } else cb(null, true);
+    },
+};
+// -------------------------------------------------------------------------
+
 
 @Controller('api/groups')
 export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
 
   @Post()
-  async create(@Body() dto: CreateGroupDto) {
-    const { user_id, name, description, image_url } = dto;
-    if (!user_id) throw new BadRequestException('Missing user_id');
+  // 🚨 CORRECCIÓN CRÍTICA: Interceptar FormData y archivo en el POST de creación 🚨
+  @UseInterceptors(FileInterceptor('image', diskConfig))
+  async create(
+      @Body() dto: CreateGroupDto,
+      @UploadedFile() file?: Express.Multer.File
+    ) {
+        // 🚨 SOLUCIÓN AL TypeError: Acceso seguro a los campos de FormData 🚨
+        const user_id = dto?.user_id; 
+        const name = dto?.name;
+        const description = dto?.description;
+        let image_url = dto?.image_url; // URL externa
 
-    return this.groupsService.createGroup(user_id, name, description, image_url);
+    if (!user_id) throw new BadRequestException('Missing user_id');
+    if (!name) throw new BadRequestException('Missing group name');
+
+    if (file) {
+        // Generar la URL corta del archivo subido
+        image_url = `http://localhost:3001/group_uploads/${file.filename}`;
+    }
+
+    try {
+        // Llamar al servicio con la URL final (o URL externa/null)
+        return this.groupsService.createGroup(user_id, name, description, image_url);
+    } catch (error) {
+        // Si la DB falla, borramos el archivo físico subido
+        if (file) {
+            try { fs.unlinkSync(file.path); } catch (e) { console.error('Cleanup failed:', e); }
+        }
+        throw new InternalServerErrorException('Failed to create group');
+    }
   }
 
 
@@ -42,32 +94,46 @@ export class GroupsController {
     return this.groupsService.getGroup(groupId);
   }
 
-  // Editar grupo (owner). Permite subir archivo opcional que se convierte a base64 (memory)
+  // Editar grupo (owner). 
     @Patch(':groupId')
-    @UseInterceptors(FileInterceptor('image', {
-      storage: memoryStorage(),
-      limits: { fileSize: 2 * 1024 * 1024 },
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
-          cb(new BadRequestException('Solo imágenes permitidas'), false);
-        } else cb(null, true);
-      }
-    }))
+    // 🚨 CORRECCIÓN CLAVE: Aplicar la configuración de diskStorage para la edición 🚨
+    @UseInterceptors(FileInterceptor('image', diskConfig))
     async update(
       @Req() req: any,
       @Param('groupId') groupId: string,
       @Body() dto: UpdateGroupDto,
       @UploadedFile() file?: Express.Multer.File,
     ) {
-      // 🔹 TOMA EL user_id del req.user o del body
+      
       const userId = req.user?.user_id || dto.user_id;
       if (!userId) throw new BadRequestException('Missing user_id');
 
+      let oldFilePath: string | null = null;
+      
+      // Lógica de actualización de URL y borrado del archivo antiguo (similar a users)
       if (file) {
-        dto.image_url = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-      }
+          // Generar la URL
+          const publicUrl = `http://localhost:3001/group_uploads/${file.filename}`;
 
-      return this.groupsService.updateGroup(userId, groupId, dto);
+          // Obtener URL antigua para borrado
+          const oldGroup = await this.groupsService.getGroup(groupId);
+          if (oldGroup?.image_url && !oldGroup.image_url.includes('default')) {
+              const oldFileName = oldGroup.image_url.split('/').pop();
+              oldFilePath = path.join(UPLOADS_DIR, oldFileName || '');
+          }
+
+          // Asignar nueva URL al DTO
+          dto.image_url = publicUrl;
+      }
+      
+      const updatedGroup = await this.groupsService.updateGroup(userId, groupId, dto);
+
+      // Si el borrado físico es necesario, se ejecuta después del update exitoso en DB
+      if (oldFilePath && fs.existsSync(oldFilePath)) {
+          try { fs.unlinkSync(oldFilePath); } catch (e) { console.error('Failed to delete old group image:', e); }
+      }
+      
+      return updatedGroup;
     }
 
   // Unirse
@@ -100,7 +166,6 @@ async share(@Req() req: any, @Param('groupId') groupId: string, @Body() dto: Sha
 
   const shared = await this.groupsService.shareContent(userId, groupId, dto.spotify_uri, dto.content_type);
 
-  // ✅ Esto garantiza que Axios lo considere “éxito”
   return {
     ok: true,
     message: 'Contenido compartido correctamente',

@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 
 // Define el tipo de datos del usuario
 interface User {
-  name: string | undefined;
+  name?: string;
   accessToken: any;
   user_id: string;
   display_email: string;
